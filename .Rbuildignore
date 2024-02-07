@@ -3,5 +3,6 @@
 ^project\.Rproj$
 ^\.Rproj\.user$
 ^project\.Rcheck$
-^project.*\.tar\.gz$
-^project.*\.tgz$
+^MODISR.*\.tar\.gz$
+^MODISR.*\.tgz$
+^LICENSE\.md$

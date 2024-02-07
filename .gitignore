@@ -5,9 +5,9 @@
 .httr-oauth
 .DS_Store
 .quarto
-project.Rcheck/
-project*.tar.gz
-project*.tgz
+MODISR.Rcheck/
+MODISR*.tar.gz
+MODISR*.tgz
 
 # History files
 .Rhistory
