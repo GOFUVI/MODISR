@@ -149,6 +149,16 @@
       ],
       "Hash": "e0b3a53876554bd45879e596cdb10a52"
     },
+    "here": {
+      "Package": "here",
+      "Version": "1.0.1",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "rprojroot"
+      ],
+      "Hash": "24b224366f9c2e7534d2344d10d59211"
+    },
     "jsonlite": {
       "Package": "jsonlite",
       "Version": "1.8.8",
@@ -181,6 +191,13 @@
         "R"
       ],
       "Hash": "7ce2733a9826b3aeb1775d56fd305472"
+    },
+    "ncdf4": {
+      "Package": "ncdf4",
+      "Version": "1.22",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "004b5219ae6d8ff53a3dcd2c89e56139"
     },
     "pillar": {
       "Package": "pillar",
@@ -275,6 +292,21 @@
         "utils"
       ],
       "Hash": "dd2b9319ee0656c8acf45c7f40c59de7"
+    },
+    "purrr": {
+      "Package": "purrr",
+      "Version": "1.0.2",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "cli",
+        "lifecycle",
+        "magrittr",
+        "rlang",
+        "vctrs"
+      ],
+      "Hash": "1cba04a4e9414bdefc9dcaa99649a8dc"
     },
     "rematch2": {
       "Package": "rematch2",

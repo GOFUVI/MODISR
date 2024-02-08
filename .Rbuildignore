@@ -1,8 +1,9 @@
 ^renv$
 ^renv\.lock$
-^project\.Rproj$
+^MODISR\.Rproj$
 ^\.Rproj\.user$
 ^project\.Rcheck$
 ^MODISR.*\.tar\.gz$
 ^MODISR.*\.tgz$
 ^LICENSE\.md$
+^MODISR\.Rcheck$
