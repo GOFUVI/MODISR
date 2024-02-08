@@ -1,14 +1,20 @@
 Package: MODISR
 Title: MODIS-AQUA file reading
-Version: 0.0.0.9000
+Version: 0.0.0.9001
 Authors@R: 
      person("Juan Luis", "Herrera Cortijo", , "first.last@example.com", role = c("aut", "cre"),
            comment = c(ORCID = "https://orcid.org/0000-0002-4206-2459"))
-Description: MODIS-AQUA file reading
+Description: This package allows the reading of MODIS-AQUA NetCDF files.
 License: AGPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Suggests: 
+    here,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Imports: 
+    magrittr,
+    ncdf4,
+    purrr,
+    tidyr
