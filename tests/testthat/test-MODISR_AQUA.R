@@ -52,6 +52,7 @@ describe("modisr_aqua_list_files",{
     #
 
     it("should retrieve files that overlap the bounding box",{
+
       skip_if_offline()
       skip_on_cran()
 
