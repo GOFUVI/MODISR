@@ -10,7 +10,7 @@ modisr_aqua_product_sort_name <- function(product){
 }
 
 #' @importFrom rlang %||%
-modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results = 20, temporal = NULL){
+modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results = 20, temporal = NULL, bounding_box = NULL, polygon = NULL){
 
 
 
@@ -18,6 +18,12 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
 
   if(!is.null(temporal)){
     url <- glue::glue("{url}&temporal={temporal[1]},{temporal[2]}")
+  }
+
+  if(!is.null(bounding_box)){
+
+    url <- glue::glue("{url}&bounding_box={bounding_box[1]},{bounding_box[2]},{bounding_box[3]},{bounding_box[4]}")
+
   }
 
   results_to_retrieve <- max_results

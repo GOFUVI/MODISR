@@ -36,6 +36,31 @@ describe("modisr_aqua_list_files",{
 
   })
 
+  describe("bounding_box option",{
+
+    # https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html#c-bounding-box
+    # Bounding Box
+    #
+    # Bounding boxes define an area on the earth aligned with longitude and latitude. The Bounding box parameters must be 4 comma-separated numbers: lower left longitude, lower left latitude, upper right longitude, upper right latitude.
+    # This parameter supports the and/or option as shown below.
+    #
+    # curl "https://cmr.earthdata.nasa.gov/search/collections?bounding_box[]=-10,-5,10,5"
+    #
+    # curl "https://cmr.earthdata.nasa.gov/search/collections?bounding_box[]=-10,-5,10,5&bounding_box[]=-11,-6,11,6&options[bounding_box][or]=true"
+    #
+
+    it("should retrieve files that overlap the bounding box",{
+
+      bounding_box <- c(-10,42,-9,43)
+
+      test <- modisr_aqua_list_files(bounding_box=bounding_box)
+
+      expect_snapshot_value(test, style = "serialize")
+
+    })
+
+  })
+
   describe("list ALL files",{
 
     it("should return all the files",{
