@@ -2,7 +2,9 @@ modisr_aqua_available_products <- c("MODIS AQUA L2 SST")
 
 modisr_aqua_product_sort_name <- function(product){
 
-  c("MODIS AQUA L2 SST"="MODISA_L2_SST"
+  c("MODIS AQUA L2 SST" = "MODISA_L2_SST",
+    "MODIS AQUA L3 Binned CHL" = "MODISA_L3b_CHL",
+    "MODIS AQUA L3 Mapped CHL" = "MODISA_L3m_CHL"
     )[product]
 
 }
