@@ -73,16 +73,31 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
 }
 
 
-modisr_aqua_download_files <- function(files, dest, key) {
-
-  files %>% purrr::walk(\(file){
+modisr_aqua_download_files <- function(files, dest, key, workers = 1) {
 
 
-  url <- sprintf("https://oceandata.sci.gsfc.nasa.gov/ob/getfile/%s?appkey=%s", file, key)
+  future::plan("multisession", workers = workers)
 
-  download.file(url, dest)
+  files %<>% dplyr::mutate(to_download = stringr::str_remove(GranuleUR, paste0(CollectionReference$Version,"_",CollectionReference$ShortName,"_")))
 
-})
+
+  download_oceandata_file <- function(file){
+
+
+    url <- sprintf("https://oceandata.sci.gsfc.nasa.gov/ob/getfile/%s?appkey=%s", file, key)
+
+    download.file(url, file.path(dest,file))
+
+  }
+
+
+  files$to_download %>% furrr::future_walk(download_oceandata_file)
+
+
+
+  files$downloaded_file_path <- file.path(dest,files$to_download)
+
+  return(files)
 
 }
 
