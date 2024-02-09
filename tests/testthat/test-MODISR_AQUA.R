@@ -50,3 +50,19 @@ describe("modisr_aqua_list_files",{
   })
 
 })
+
+describe("modisr_aqua_read_vars",{
+
+  it("should read the vars",{
+
+    connection <- ncdf4::nc_open(here::here("tests/testthat/data/AQUA_MODIS.20240131T142000.L2.SST.NRT.nc"))
+
+    on.exit(ncdf4::nc_close(connection))
+
+    test <- modisr_aqua_read_vars(connection, "geophysical_data/sst")
+
+expect_snapshot_value(test, style = "serialize")
+
+  })
+
+})

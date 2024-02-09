@@ -2,7 +2,8 @@ modisr_aqua_available_products <- c("MODIS AQUA L2 SST")
 
 modisr_aqua_product_sort_name <- function(product){
 
-  c("MODIS AQUA L2 SST"="MODISA_L2_SST")[product]
+  c("MODIS AQUA L2 SST"="MODISA_L2_SST"
+    )[product]
 
 }
 
@@ -84,12 +85,21 @@ modisr_aqua_read_metadata <- function(con){
 
   vars <- con$var %>% names()
 
-  vars_metadata <- vars %>% purrr::map(\(var) ncdf4::ncatt_get(con,var))
+  vars_metadata <- vars %>% purrr::map(\(var) ncdf4::ncatt_get(con,var)) %>% magrittr::set_names(vars)
 
   dimensions_metadata <- con$dim %>% names()
 
   out <- list(global = global, vars = vars_metadata, dimensions = dimensions_metadata)
 
   return(out)
+
+}
+
+
+modisr_aqua_read_vars <- function(con, vars){
+
+out <- vars %>% purrr::map(\(var) ncdf4::ncvar_get(con, var)) %>% magrittr::set_names(vars)
+
+return(out)
 
 }
