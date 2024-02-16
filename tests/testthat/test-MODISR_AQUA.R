@@ -38,6 +38,39 @@ describe("modisr_aqua_list_files",{
 
   })
 
+  describe("L3b SST",{
+    it("should return the serch results",{
+
+      skip_if_offline()
+      skip_on_cran()
+
+      test <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned SST")
+
+      test$took <- NULL
+
+      expect_snapshot_value(test, style = "serialize")
+
+    })
+
+  })
+
+
+  describe("L3b CHL",{
+    it("should return the serch results",{
+
+      skip_if_offline()
+      skip_on_cran()
+
+      test <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned CHL")
+
+      test$took <- NULL
+
+      expect_snapshot_value(test, style = "serialize")
+
+    })
+
+  })
+
   describe("bounding_box option",{
 
     # https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html#c-bounding-box
@@ -130,3 +163,34 @@ expect_equal(sort(list.files(target_folder,full.names = T)), test$downloaded_fil
   })
 
 })
+
+
+
+describe("modisr_aqua_matrix_data_from_folder",{
+
+  it("should read all the files in a folder and then create a matrix for a designated var",{
+
+    skip_if_offline()
+    skip_on_cran()
+
+    files <- modisr_aqua_list_files()
+
+    temp_dir <- tempdir()
+
+    target_folder <- file.path(temp_dir, "MODISR")
+
+    unlink(target_folder,force = T,recursive = T)
+
+    dir.create(target_folder)
+
+    files <- modisr_aqua_download_files(files,target_folder, (readLines(here::here("tests/testthat/key"))),workers = 1)
+
+test <- modisr_aqua_matrix_data_from_folder(target_folder, "geophysical_data/sst")
+
+
+
+
+  })
+
+})
+
