@@ -10,12 +10,14 @@ modisr_aqua_product_sort_name <- function(product){
 
 }
 
+#' https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html
 #' @importFrom rlang %||%
-modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results = 20, temporal = NULL, bounding_box = NULL, polygon = NULL){
+modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results = 20, temporal = NULL, bounding_box = NULL, polygon = NULL, time_resolution = NULL){
 
 
+  short_name <- modisr_aqua_product_sort_name(product)
 
-  url <- glue::glue("https://cmr.earthdata.nasa.gov/search/granules.umm_json?sort_key=short_name&sort_key=start_date&short_name={modisr_aqua_product_sort_name(product)}&provider=OB_DAAC")
+  url <- glue::glue("https://cmr.earthdata.nasa.gov/search/granules.umm_json?sort_key=short_name&sort_key=start_date&short_name={short_name}&provider=OB_DAAC")
 
   if(!is.null(temporal)){
     url <- glue::glue("{url}&temporal={temporal[1]},{temporal[2]}")
@@ -27,6 +29,15 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
 
   }
 
+
+  if(!is.null(time_resolution) && time_resolution %in% c("DAY","MO","YR","8D")){
+
+
+    url <- glue::glue("{url}&granule_ur[]=*{short_name}*.{time_resolution}.*&options[granule_ur][pattern]=true")
+
+
+
+  }
   results_to_retrieve <- max_results
 
   if(is.null(results_to_retrieve)) {

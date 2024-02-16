@@ -99,6 +99,24 @@ describe("modisr_aqua_list_files",{
 
   })
 
+  describe("time_resolution option",{
+
+    it("should return the results for the given time resolution",{
+
+      skip_if_offline()
+      skip_on_cran()
+
+      test <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned CHL",time_resolution = "DAY")
+
+      test$took <- NULL
+
+      expect_snapshot_value(test, style = "serialize")
+
+
+    })
+
+  })
+
   describe("list ALL files",{
 
     it("should return all the files",{
