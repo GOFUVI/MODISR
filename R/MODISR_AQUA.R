@@ -3,6 +3,7 @@ modisr_aqua_available_products <- c("MODIS AQUA L2 SST")
 modisr_aqua_product_sort_name <- function(product){
 
   c("MODIS AQUA L2 SST" = "MODISA_L2_SST",
+    "MODIS AQUA L3 Binned SST" = "MODISA_L3b_SST",
     "MODIS AQUA L3 Binned CHL" = "MODISA_L3b_CHL",
     "MODIS AQUA L3 Mapped CHL" = "MODISA_L3m_CHL"
     )[product]
@@ -110,11 +111,25 @@ modisr_aqua_read_metadata <- function(con){
 
   vars_metadata <- vars %>% purrr::map(\(var) ncdf4::ncatt_get(con,var)) %>% magrittr::set_names(vars)
 
-  dimensions_metadata <- con$dim %>% names()
+  dimensions_metadata <- con$dim
 
   out <- list(global = global, vars = vars_metadata, dimensions = dimensions_metadata)
 
   return(out)
+
+}
+
+#' @export
+modisr_aqua_read_file_metadata <- function(file){
+
+  con <- ncdf4::nc_open(file)
+
+  on.exit(ncdf4::nc_close(con))
+
+  out <- modisr_aqua_read_metadata(con)
+
+  return(out)
+
 
 }
 
@@ -125,4 +140,43 @@ out <- vars %>% purrr::map(\(var) ncdf4::ncvar_get(con, var)) %>% magrittr::set_
 
 return(out)
 
+}
+
+#' @export
+modisr_aqua_read_file_vars <- function(file, vars){
+
+con <- ncdf4::nc_open(file)
+
+on.exit(ncdf4::nc_close(con))
+
+out <- modisr_aqua_read_vars(con, vars)
+
+return(out)
+
+
+}
+
+
+modisr_aqua_matrix_data_from_folder <- function(folder, var, workers = 1){
+
+out <- matrix()
+
+
+
+files <- list.files(folder, pattern = "*\\.nc", full.names = T)
+
+file <- files[1]
+
+browser()
+
+file_metadata <- modisr_aqua_read_file_metadata(file)
+
+start_time <- file_metadata$global$time_coverage_start
+end_time <- file_metadata$global$time_coverage_end
+
+file_data <- modisr_aqua_read_file_vars(file,c(var, "navigation_data/longitude","navigation_data/latitude"))
+
+file_result <- c(file_data,list(start_time = start_time, end_time = end_time))
+
+return(out)
 }
