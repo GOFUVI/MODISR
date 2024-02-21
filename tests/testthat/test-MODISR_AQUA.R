@@ -9,11 +9,10 @@ describe("modisr_aqua_read_metadata",{
 
 here::i_am("tests/testthat/test-MODISR_AQUA.R")
 
-connection <- ncdf4::nc_open(here::here("tests/testthat/data/AQUA_MODIS.20240131T142000.L2.SST.NRT.nc"))
+connection <- RNetCDF::open.nc(here::here("tests/testthat/data/AQUA_MODIS.20230101.L3b.DAY.SST.nc"))
 
-on.exit(ncdf4::nc_close(connection))
+test <- modisr_aqua_read_metadata(connection, is_binned = TRUE)
 
-test <- modisr_aqua_read_metadata(connection)
 
 
 expect_snapshot_value(test, style = "serialize")
@@ -88,8 +87,14 @@ describe("modisr_aqua_list_files",{
 
       skip_if_offline()
       skip_on_cran()
+      n_lat  <- 43
+      s_lat <- 42
+      w_lon <- -10
+      e_lon <- -9
 
-      bounding_box <- c(-10,42,-9,43)
+
+      bounding_box <- list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon)
+
 
       test <- modisr_aqua_list_files(bounding_box=bounding_box)
 
@@ -139,17 +144,98 @@ describe("modisr_aqua_list_files",{
 
 describe("modisr_aqua_read_vars",{
 
-  it("should read the vars",{
+  it("should read the vars for CHL",{
 
-    connection <- ncdf4::nc_open(here::here("tests/testthat/data/AQUA_MODIS.20240131T142000.L2.SST.NRT.nc"))
 
-    on.exit(ncdf4::nc_close(connection))
+    connection <- RNetCDF::open.nc(here::here("tests/testthat/data/AQUA_MODIS.20230101.L3b.DAY.CHL.nc"))
 
-    test <- modisr_aqua_read_vars(connection, "geophysical_data/sst")
+    on.exit(RNetCDF::close.nc(connection))
+
+    test <- modisr_aqua_read_vars(connection, is_binned = TRUE)
 
 expect_snapshot_value(test, style = "serialize")
 
   })
+
+  it("should read the vars for SST",{
+
+
+    connection <- RNetCDF::open.nc(here::here("tests/testthat/data/AQUA_MODIS.20230701.L3b.DAY.SST.nc"))
+
+    on.exit(RNetCDF::close.nc(connection))
+
+    n_lat  <- 43
+    s_lat <- 42
+    w_lon <- -10
+    e_lon <- -9
+
+    test <- modisr_aqua_read_vars(connection, is_binned = TRUE, bounding_box = list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon))
+
+    expect_snapshot_value(test, style = "serialize")
+
+  })
+
+  describe("auxiliary funs",{
+
+    test_that("initbin works as expected",{
+
+
+      numrows <- 4320
+      test <- initbin(numrows)
+
+expect_snapshot_value(test)
+
+    })
+
+
+    test_that("lat2row works as expected",{
+
+      # Ejemplo de uso
+      numrows <- 4320
+      lat <- 45
+      test <- lat2row(lat, numrows)
+      expect_equal(test,3240)
+
+
+    })
+
+    test_that("bin2latlon works as expected",{
+
+      numrows <- 4320
+      bin_list <- initbin(numrows)
+      test <- bin2latlon(19280505,bin_list$basebin,bin_list$numbin,bin_list$latbin)
+      expect_snapshot_value(test)
+    })
+
+    test_that("latlon2bin works as expected",{
+
+
+      bin_list <- initbin(numrows)
+      test <- latlon2bin(38.52083, 15.52367,bin_list$numbin,bin_list$basebin)
+      expect_equal(test, 19280505L)
+    })
+    test_that("bin2bounds works as expected",{
+
+      numrows <- 4320
+      bin_list <- initbin(numrows)
+      test <- bin2bounds(19280505,numrows,bin_list$basebin,bin_list$numbin,bin_list$latbin)
+      expect_snapshot_value(test)
+    })
+
+    test_that("bounding_box2bins works as expected",{
+
+      numrows <- 4320
+
+      n_lat  <- 43
+      s_lat <- 42
+      w_lon <- -10
+      e_lon <- -9
+      test <- bounding_box2bins(n_lat,s_lat,w_lon,e_lon,numrows)
+
+    })
+
+  })
+
 
 })
 
@@ -191,7 +277,16 @@ describe("modisr_aqua_matrix_data_from_folder",{
     skip_if_offline()
     skip_on_cran()
 
-    files <- modisr_aqua_list_files()
+
+    n_lat  <- 43
+    s_lat <- 42
+    w_lon <- -10
+    e_lon <- -9
+
+
+    bounding_box <- list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon)
+
+    files <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned SST",time_resolution = "DAY",temporal = c("2023-07-01","2023-08-31"),max_results = 10,bounding_box = bounding_box)
 
     temp_dir <- tempdir()
 
@@ -203,7 +298,7 @@ describe("modisr_aqua_matrix_data_from_folder",{
 
     files <- modisr_aqua_download_files(files,target_folder, (readLines(here::here("tests/testthat/key"))),workers = 1)
 
-test <- modisr_aqua_matrix_data_from_folder(target_folder, "geophysical_data/sst")
+test <- modisr_aqua_read_data_from_folder(target_folder, is_binned = TRUE, bounding_box = bounding_box)
 
 
 
