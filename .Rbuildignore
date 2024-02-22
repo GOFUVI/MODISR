@@ -7,3 +7,4 @@
 ^MODISR.*\.tgz$
 ^LICENSE\.md$
 ^MODISR\.Rcheck$
+^tools$

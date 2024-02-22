@@ -1,6 +1,6 @@
 modisr_aqua_available_products <- c("MODIS AQUA L2 SST")
 
-modisr_aqua_product_sort_name <- function(product){
+modisr_aqua_product_short_name <- function(product){
 
   c("MODIS AQUA L2 SST" = "MODISA_L2_SST",
     "MODIS AQUA L3 Binned SST" = "MODISA_L3b_SST",
@@ -15,7 +15,7 @@ modisr_aqua_product_sort_name <- function(product){
 modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results = 20, temporal = NULL, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), polygon = NULL, time_resolution = NULL){
 
 
-  short_name <- modisr_aqua_product_sort_name(product)
+  short_name <- modisr_aqua_product_short_name(product)
 
   url <- glue::glue("https://cmr.earthdata.nasa.gov/search/granules.umm_json?sort_key=short_name&sort_key=start_date&short_name={short_name}&provider=OB_DAAC")
 

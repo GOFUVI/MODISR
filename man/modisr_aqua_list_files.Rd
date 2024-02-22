@@ -8,7 +8,7 @@ modisr_aqua_list_files(
   product = "MODIS AQUA L2 SST",
   max_results = 20,
   temporal = NULL,
-  bounding_box = NULL,
+  bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180),
   polygon = NULL,
   time_resolution = NULL
 )
