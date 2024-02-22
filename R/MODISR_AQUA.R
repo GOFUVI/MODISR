@@ -262,29 +262,29 @@ bin2latlon <- function(bin, basebin, numbin, latbin) {
 
 bounding_box2bins <- function(n_lat,s_lat,w_lon,e_lon, numrows){
 
-bin_index <- initbin(numrows)
+  bin_index <- initbin(numrows)
 
-lat_bin <- bin_index$latbin
+  lat_bin <- bin_index$latbin
 
-rows <- which(lat_bin >= s_lat & lat_bin <= n_lat)
-
-
-w_bins <-bin_index$basebin[rows] + as.integer((w_lon + 180) * bin_index$numbin[rows] / 360)
-e_bins <-bin_index$basebin[rows] + as.integer((e_lon + 180) * bin_index$numbin[rows] / 360)
-
-bins <- purrr::map2(w_bins,e_bins,\(w_bin,e_bin) seq(w_bin,e_bin)) %>% purrr::list_c()
-
-bounds <- bins %>% purrr::map(\(bin) bin2bounds(bin, numrows, bin_index$basebin, bin_index$numbin,bin_index$latbin)  %>% as.data.frame()) %>% purrr::list_rbind()  %>% dplyr::mutate(bin=bins,.before=1)
-
-bounds %<>% dplyr::filter(west >= w_lon & east <= e_lon)
+  rows <- which(lat_bin >= s_lat & lat_bin <= n_lat)
 
 
+  w_bins <-bin_index$basebin[rows] + as.integer((w_lon + 180) * bin_index$numbin[rows] / 360)
+  e_bins <-bin_index$basebin[rows] + as.integer((e_lon + 180) * bin_index$numbin[rows] / 360)
 
-lat_lon <- bounds$bin %>% purrr::map(\(bin) bin2latlon(bin, bin_index$basebin, bin_index$numbin,bin_index$latbin) %>% as.data.frame()) %>% purrr::list_rbind()
+  bins <- purrr::map2(w_bins,e_bins,\(w_bin,e_bin) seq(w_bin,e_bin)) %>% purrr::list_c()
 
-out <- dplyr::bind_cols(bounds,lat_lon)
+  bounds <- bins %>% purrr::map(\(bin) bin2bounds(bin, numrows, bin_index$basebin, bin_index$numbin,bin_index$latbin)  %>% as.data.frame()) %>% purrr::list_rbind()  %>% dplyr::mutate(bin=bins,.before=1)
 
-return(out)
+  bounds %<>% dplyr::filter(west >= w_lon & east <= e_lon)
+
+
+
+  lat_lon <- bounds$bin %>% purrr::map(\(bin) bin2latlon(bin, bin_index$basebin, bin_index$numbin,bin_index$latbin) %>% as.data.frame()) %>% purrr::list_rbind()
+
+  out <- dplyr::bind_cols(bounds,lat_lon)
+
+  return(out)
 }
 
 bin2bounds <- function(bin, numrows, basebin, numbin, latbin) {
@@ -304,6 +304,8 @@ bin2bounds <- function(bin, numrows, basebin, numbin, latbin) {
 
 
 modisr_aqua_read_vars <- function(con, vars= NULL, is_binned = FALSE, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), bins = NULL, landmask = NULL){
+
+  meta <- modisr_aqua_read_metadata(con, is_binned = is_binned)
 
   if(is_binned){
 
@@ -334,52 +336,53 @@ modisr_aqua_read_vars <- function(con, vars= NULL, is_binned = FALSE, bounding_b
 
     }
 
-if(is.null(bins)){
+    if(is.null(bins)){
 
-  bins <- bounding_box2bins(bounding_box$n_lat, bounding_box$s_lat, bounding_box$w_lon, bounding_box$e_lon, numrows)
-if(!isFALSE(landmask)){
-
-
-  meta <- modisr_aqua_read_metadata(con, is_binned = is_binned)
-
-  buffer <- as.numeric(stringr::str_extract(meta$global$spatialResolution,"[\\d\\.]*"))
-
-  units(buffer) <- "km"
-
-  landmask %<>% sf::st_buffer(buffer)
-
-
-  bins_sf <- sf::st_as_sf(bins,coords = c("lon","lat"))
-
-  sf::st_crs(bins_sf) <- 4326
-
-  crs <-modisr_get_crs_sinu()
-  bins_sf %<>% sf::st_transform(crs)
-
-  bins_masked <- sf::st_filter(bins_sf,landmask)
-
-  bins %<>% dplyr::filter(!bin %in% bins_masked$bin)
+      bins <- bounding_box2bins(bounding_box$n_lat, bounding_box$s_lat, bounding_box$w_lon, bounding_box$e_lon, numrows)
+      if(!isFALSE(landmask)){
 
 
 
 
-}
+        buffer <- as.numeric(stringr::str_extract(meta$global$spatialResolution,"[\\d\\.]*"))
 
-}
+        units(buffer) <- "km"
 
-attr(out,"BinIndex") <- out$BinIndex
-
-out["BinIndex"] <- NULL
-
-data_to_keep <- which(out$BinList$bin_num %in% bins$bin)
-
-out$BinList %<>% dplyr::slice(data_to_keep) %>% dplyr::left_join(bins, dplyr::join_by(bin_num==bin))
-
-out[!names(out) %in% c("BinList")] %<>% purrr::map(\(data) dplyr::slice(data,data_to_keep))
+        landmask %<>% sf::st_buffer(buffer)
 
 
-attr(out,"numrows") <- numrows
-attr(out,"bins") <- bins
+        bins_sf <- sf::st_as_sf(bins,coords = c("lon","lat"))
+
+        sf::st_crs(bins_sf) <- 4326
+
+        crs <-modisr_get_crs_sinu()
+        bins_sf %<>% sf::st_transform(crs)
+
+        bins_masked <- sf::st_filter(bins_sf,landmask)
+
+        bins %<>% dplyr::filter(!bin %in% bins_masked$bin)
+
+
+
+
+      }
+
+    }
+
+    attr(out,"BinIndex") <- out$BinIndex
+
+    out["BinIndex"] <- NULL
+
+    data_to_keep <- which(out$BinList$bin_num %in% bins$bin)
+
+    out$BinList %<>% dplyr::slice(data_to_keep) %>% dplyr::left_join(bins, dplyr::join_by(bin_num==bin))
+
+    out[!names(out) %in% c("BinList")] %<>% purrr::map(\(data) dplyr::slice(data,data_to_keep))
+
+
+    attr(out,"numrows") <- numrows
+    attr(out,"bins") <- bins
+    attr(out,"metadata") <- meta
 
   }else{
 
@@ -459,17 +462,17 @@ modisr_binned_to_sf <- function(data){
 
 
 
-      },.init = data$BinList)
+    },.init = data$BinList)
 
-crs <- modisr_get_crs_sinu()
+  crs <- modisr_get_crs_sinu()
 
-df_sf <- df %<>% sf::st_as_sf(coords = c("lon","lat"))
+  df_sf <- df %<>% sf::st_as_sf(coords = c("lon","lat"))
 
-sf::st_crs(df_sf) <- 4326
+  sf::st_crs(df_sf) <- 4326
 
-out <- df_sf %>% sf::st_transform(crs)
+  out <- df_sf %>% sf::st_transform(crs)
 
-return(out)
+  return(out)
 
 }
 
@@ -502,8 +505,30 @@ modisr_filter <- function(data, conds, is_binned = FALSE){
 
 
 
-  out <- data %>% purrr::map(\(df) df%>% dplyr::slice(rows_to_keep))
+  out <- data %>% purrr::map(\(df) df%>% dplyr::slice(rows_to_keep))  %>% magrittr::set_attributes(attributes(data))
 
   return(out)
 
 }
+
+
+#' @export
+modisr_compute_total_data_area <- function(data, is_binned = FALSE){
+
+
+  if(is_binned){
+    meta <- attr(data,"metadata", exact = TRUE)
+
+    spatial_resolution <- as.numeric(stringr::str_extract(meta$global$spatialResolution,"[\\d\\.]*"))
+
+    area <- nrow(data$BinList) * spatial_resolution * spatial_resolution
+
+  }else{
+
+    stop("binned = FALSE not implemented")
+  }
+
+  return(area)
+
+}
+

@@ -394,3 +394,38 @@ expect_snapshot_value(test, style = "serialize")
   })
 
 })
+
+
+describe("modisr_compute_total_data_area",{
+
+
+it("should return the total area",{
+
+  file <- here::here("tests/testthat/data/AQUA_MODIS.20230701.L3b.DAY.SST.nc")
+
+
+
+  n_lat  <- 44
+  s_lat <- 42
+  w_lon <- -10
+  e_lon <- -8
+
+  test_data <- modisr_aqua_read_file_vars(file, is_binned = TRUE, bounding_box = list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon))
+
+  cond_fun1 <- function(df) df$sst_sum/df$weights > 17.5
+  cond_fun2 <- function(df) df$sst_sum/df$weights < 18
+
+  cond_fun3 <- function(df) df$sst_sum/df$weights > 18.5
+
+  conds <- list(list(cond_fun1,cond_fun2), list(cond_fun3))
+
+  filtered <- modisr_filter(test_data,conds , is_binned = TRUE)
+
+
+  test <- modisr_compute_total_data_area(filtered, is_binned = TRUE)
+
+  expect_equal(test, nrow(filtered$BinList) * 4.638312 ^2)
+
+})
+
+})
