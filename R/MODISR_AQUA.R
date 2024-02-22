@@ -367,17 +367,19 @@ if(!isFALSE(landmask)){
 
 }
 
+attr(out,"BinIndex") <- out$BinIndex
 
+out["BinIndex"] <- NULL
 
 data_to_keep <- which(out$BinList$bin_num %in% bins$bin)
 
 out$BinList %<>% dplyr::slice(data_to_keep) %>% dplyr::left_join(bins, dplyr::join_by(bin_num==bin))
 
-out[!names(out) %in% c("BinList", "BinIndex")] %<>% purrr::map(\(data) dplyr::slice(data,data_to_keep))
+out[!names(out) %in% c("BinList")] %<>% purrr::map(\(data) dplyr::slice(data,data_to_keep))
 
 
-out$numrows <- numrows
-out$bins <- bins
+attr(out,"numrows") <- numrows
+attr(out,"bins") <- bins
 
   }else{
 
@@ -428,7 +430,7 @@ modisr_aqua_read_data_from_folder <- function(folder, vars= NULL, is_binned = FA
     file_data <- modisr_aqua_read_file_vars(file,  vars = vars, is_binned = is_binned, bounding_box = bounding_box, bins = bins, landmask = landmask )
 
     if(is.null(bins)){
-      bins <<- file_data$bins
+      bins <<- attr(file_data,"bins", exact = TRUE)
     }
 
     file_result <- c(file_data)
@@ -447,7 +449,7 @@ modisr_aqua_read_data_from_folder <- function(folder, vars= NULL, is_binned = FA
 
 modisr_binned_to_sf <- function(data){
 
-  df <- data[!names(data) %in% c("BinList","BinIndex","bins")] %>% purrr::keep(\(x) inherits(x,"data.frame")) %>%
+  df <- data[!names(data) %in% c("BinList")] %>% purrr::keep(\(x) inherits(x,"data.frame")) %>%
     purrr::reduce2(names(.),\(df_so_far,new_df, name) {
 
 
@@ -468,5 +470,40 @@ sf::st_crs(df_sf) <- 4326
 out <- df_sf %>% sf::st_transform(crs)
 
 return(out)
+
+}
+
+
+#'@export
+modisr_filter <- function(data, conds, is_binned = FALSE){
+
+  if(is_binned){
+    data_sf <- modisr_binned_to_sf(data)
+  }else{
+
+    stop("is_binned = FALSE not implemented")
+  }
+
+
+
+
+
+
+
+  filtered <- conds %>% purrr::map(\(cond_set) cond_set %>% purrr::reduce(\(df_so_far,cond_fun) df_so_far[cond_fun(df_so_far),]  ,.init = data_sf))
+
+  bins <- dplyr::bind_rows(filtered) %>% dplyr::distinct() %>% dplyr::pull("bin_num")
+
+  rows_to_keep <- which(data$BinList$bin_num %in% bins)
+
+  attr(data,"bins") <- attr(data,"bins",exact = TRUE) %>% dplyr::filter(bin %in% bins)
+
+
+
+
+
+  out <- data %>% purrr::map(\(df) df%>% dplyr::slice(rows_to_keep))
+
+  return(out)
 
 }
