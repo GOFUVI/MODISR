@@ -303,6 +303,8 @@ test <- modisr_aqua_read_data_from_folder(target_folder, is_binned = TRUE, bound
 
 
 
+
+
   })
 
 })
@@ -331,3 +333,31 @@ describe("land_mask",{
   })
 
 })
+
+
+describe("modisr_binned_to_sf",{
+
+  it("should return an sf object for the data",{
+
+
+    connection <- RNetCDF::open.nc(here::here("tests/testthat/data/AQUA_MODIS.20230701.L3b.DAY.SST.nc"))
+
+    on.exit(RNetCDF::close.nc(connection))
+
+    n_lat  <- 44
+    s_lat <- 42
+    w_lon <- -10
+    e_lon <- -8
+
+    test_data <- modisr_aqua_read_vars(connection, is_binned = TRUE, bounding_box = list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon))
+
+    test <- modisr_binned_to_sf(test_data)
+
+
+
+    expect_snapshot_value(test, style = "serialize")
+
+  })
+
+})
+
