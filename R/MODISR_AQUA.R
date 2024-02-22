@@ -129,7 +129,7 @@ modisr_aqua_read_metadata <- function(con, is_binned = FALSE){
 
   if(is_binned){
 
-    processing_control_grp <- RNetCDF::grp.inq.nc(connection, "processing_control")
+    processing_control_grp <- RNetCDF::grp.inq.nc(con, "processing_control")
 
     global_attributes_names <- (seq_len(processing_control_grp$ngatts) -1) %>% purrr::map(\(id) RNetCDF::att.inq.nc(processing_control_grp$self, "NC_GLOBAL",id)) %>% purrr::map_chr("name")
 
@@ -303,7 +303,7 @@ bin2bounds <- function(bin, numrows, basebin, numbin, latbin) {
 }
 
 
-modisr_aqua_read_vars <- function(con, vars= NULL, is_binned = FALSE, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), bins = NULL){
+modisr_aqua_read_vars <- function(con, vars= NULL, is_binned = FALSE, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), bins = NULL, landmask = NULL){
 
   if(is_binned){
 
@@ -328,9 +328,43 @@ modisr_aqua_read_vars <- function(con, vars= NULL, is_binned = FALSE, bounding_b
 
     numrows <- nrow(out$BinIndex)
 
+    if(is.null(landmask)){
+
+      landmask <- modisr_get_gshhg_landmask(bounding_box)
+
+    }
+
 if(is.null(bins)){
 
   bins <- bounding_box2bins(bounding_box$n_lat, bounding_box$s_lat, bounding_box$w_lon, bounding_box$e_lon, numrows)
+if(!isFALSE(landmask)){
+
+
+  meta <- modisr_aqua_read_metadata(con, is_binned = is_binned)
+
+  buffer <- as.numeric(stringr::str_extract(meta$global$spatialResolution,"[\\d\\.]*"))
+
+  units(buffer) <- "km"
+
+  landmask %<>% sf::st_buffer(buffer)
+
+
+  bins_sf <- sf::st_as_sf(bins,coords = c("lon","lat"))
+
+  sf::st_crs(bins_sf) <- 4326
+
+  crs <-modisr_get_crs_sinu()
+  bins_sf %<>% sf::st_transform(crs)
+
+  bins_masked <- sf::st_filter(bins_sf,landmask)
+
+  bins %<>% dplyr::filter(!bin %in% bins_masked$bin)
+
+
+
+
+}
+
 }
 
 
@@ -356,13 +390,13 @@ out$bins <- bins
 }
 
 #' @export
-modisr_aqua_read_file_vars <- function(file, vars= NULL, is_binned = FALSE, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), bins = NULL){
+modisr_aqua_read_file_vars <- function(file, vars= NULL, is_binned = FALSE, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), bins = NULL,landmask = NULL){
 
   con <- RNetCDF::open.nc(file)
 
   on.exit(RNetCDF::close.nc(con))
 
-  out <- modisr_aqua_read_vars(con, vars = vars, is_binned = is_binned, bounding_box = bounding_box, bins = bins)
+  out <- modisr_aqua_read_vars(con, vars = vars, is_binned = is_binned, bounding_box = bounding_box, bins = bins, landmask = landmask)
 
   return(out)
 
@@ -370,7 +404,7 @@ modisr_aqua_read_file_vars <- function(file, vars= NULL, is_binned = FALSE, boun
 }
 
 
-modisr_aqua_read_data_from_folder <- function(folder, vars= NULL, is_binned = FALSE, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), workers = 1, bins = NULL){
+modisr_aqua_read_data_from_folder <- function(folder, vars= NULL, is_binned = FALSE, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), workers = 1, bins = NULL, landmask = NULL){
 
   out <- matrix()
 
@@ -378,7 +412,11 @@ modisr_aqua_read_data_from_folder <- function(folder, vars= NULL, is_binned = FA
 
   files <- list.files(folder, pattern = "*\\.nc", full.names = T)
 
+  if(is.null(landmask)){
 
+    landmask <- modisr_get_gshhg_landmask(bounding_box)
+
+  }
 
   out <- files %>% purrr::map(\(file){
 
@@ -386,7 +424,8 @@ modisr_aqua_read_data_from_folder <- function(folder, vars= NULL, is_binned = FA
 
 
 
-    file_data <- modisr_aqua_read_file_vars(file,  vars = vars, is_binned = is_binned, bounding_box = bounding_box, bins = bins )
+
+    file_data <- modisr_aqua_read_file_vars(file,  vars = vars, is_binned = is_binned, bounding_box = bounding_box, bins = bins, landmask = landmask )
 
     if(is.null(bins)){
       bins <<- file_data$bins
@@ -403,4 +442,31 @@ modisr_aqua_read_data_from_folder <- function(folder, vars= NULL, is_binned = FA
 
 
   return(out)
+}
+
+
+modisr_binned_to_sf <- function(data){
+
+  df <- data[!names(data) %in% c("BinList","BinIndex","bins")] %>% purrr::keep(\(x) inherits(x,"data.frame")) %>%
+    purrr::reduce2(names(.),\(df_so_far,new_df, name) {
+
+
+      names(new_df) <- glue::glue("{name}_{names(new_df)}")
+
+      dplyr::bind_cols(df_so_far,new_df)
+
+
+
+      },.init = data$BinList)
+
+crs <- modisr_get_crs_sinu()
+
+df_sf <- df %<>% sf::st_as_sf(coords = c("lon","lat"))
+
+sf::st_crs(df_sf) <- 4326
+
+out <- df_sf %>% sf::st_transform(crs)
+
+return(out)
+
 }
