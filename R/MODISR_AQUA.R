@@ -379,9 +379,12 @@ modisr_aqua_read_vars <- function(con, vars= NULL, is_binned = FALSE, bounding_b
 
     out[!names(out) %in% c("BinList")] %<>% purrr::map(\(data) dplyr::slice(data,data_to_keep))
 
+    missing_bins <- bins %>% dplyr::filter(!bin %in% out$BinList$bin_num)
+
 
     attr(out,"numrows") <- numrows
     attr(out,"bins") <- bins
+    attr(out, "missing_bins") <- missing_bins
     attr(out,"metadata") <- meta
 
   }else{
@@ -499,12 +502,6 @@ modisr_filter <- function(data, conds, is_binned = FALSE){
 
   rows_to_keep <- which(data$BinList$bin_num %in% bins)
 
-  attr(data,"bins") <- attr(data,"bins",exact = TRUE) %>% dplyr::filter(bin %in% bins)
-
-
-
-
-
   out <- data %>% purrr::map(\(df) df%>% dplyr::slice(rows_to_keep))  %>% magrittr::set_attributes(attributes(data))
 
   return(out)
@@ -532,3 +529,31 @@ modisr_compute_total_data_area <- function(data, is_binned = FALSE){
 
 }
 
+#'@export
+modisr_compute_missing_bins_percent <- function(data){
+
+
+  bins <- attr(data, "bins", exact = TRUE)
+
+  missing_bins <- attr(data, "missing_bins", exact = TRUE)
+
+  out<- nrow(missing_bins)/nrow(bins)
+
+  return(out)
+
+}
+
+#' @export
+modisr_plot_binned_data <- function(data, var){
+
+  data_sf <- modisr_binned_to_sf(data)
+
+  renaming <- c(var) %>% magrittr::set_names("var")
+
+  data_sf %<>% dplyr::rename(renaming)
+
+
+  ggplot2::ggplot(data_sf) + ggplot2::geom_sf(ggplot2::aes(color=var/weights))
+
+
+}
