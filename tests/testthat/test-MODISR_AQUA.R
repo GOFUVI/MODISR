@@ -87,10 +87,10 @@ describe("modisr_aqua_list_files",{
 
       skip_if_offline()
       skip_on_cran()
-      n_lat  <- 43
+      n_lat  <- 44
       s_lat <- 42
       w_lon <- -10
-      e_lon <- -9
+      e_lon <- -8
 
 
       bounding_box <- list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon)
@@ -164,10 +164,10 @@ expect_snapshot_value(test, style = "serialize")
 
     on.exit(RNetCDF::close.nc(connection))
 
-    n_lat  <- 43
+    n_lat  <- 44
     s_lat <- 42
     w_lon <- -10
-    e_lon <- -9
+    e_lon <- -8
 
     test <- modisr_aqua_read_vars(connection, is_binned = TRUE, bounding_box = list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon))
 
@@ -226,10 +226,10 @@ expect_snapshot_value(test)
 
       numrows <- 4320
 
-      n_lat  <- 43
+      n_lat  <- 44
       s_lat <- 42
       w_lon <- -10
-      e_lon <- -9
+      e_lon <- -8
       test <- bounding_box2bins(n_lat,s_lat,w_lon,e_lon,numrows)
 
     })
@@ -278,10 +278,10 @@ describe("modisr_aqua_matrix_data_from_folder",{
     skip_on_cran()
 
 
-    n_lat  <- 43
+    n_lat  <- 44
     s_lat <- 42
     w_lon <- -10
-    e_lon <- -9
+    e_lon <- -8
 
 
     bounding_box <- list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon)
@@ -307,3 +307,27 @@ test <- modisr_aqua_read_data_from_folder(target_folder, is_binned = TRUE, bound
 
 })
 
+describe("land_mask",{
+
+  describe("modisr_get_gshhg_landmask",{
+
+    it("should return the landmask for a given bbox",{
+
+      n_lat  <- 44
+      s_lat <- 42
+      w_lon <- -10
+      e_lon <- -8
+
+
+      bounding_box <- list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon)
+
+
+      test <- modisr_get_gshhg_landmask(bounding_box)
+
+      expect_snapshot_value(test, style = "serialize")
+
+    })
+
+  })
+
+})
