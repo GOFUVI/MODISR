@@ -12,6 +12,7 @@ modisr_aqua_product_short_name <- function(product){
 
 #' https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html
 #' @importFrom rlang %||%
+#' @export
 modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results = 20, temporal = NULL, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), polygon = NULL, time_resolution = NULL){
 
 

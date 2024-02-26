@@ -2,6 +2,7 @@
 
 export("%<>%")
 export("%>%")
+export(modisr_aqua_list_files)
 export(modisr_aqua_read_file_metadata)
 export(modisr_aqua_read_file_vars)
 export(modisr_compute_missing_bins_percent)
