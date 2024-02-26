@@ -101,7 +101,12 @@ modisr_aqua_download_files <- function(files, dest, key, workers = 1) {
 
     url <- sprintf("https://oceandata.sci.gsfc.nasa.gov/ob/getfile/%s?appkey=%s", file, key)
 
-    download.file(url, file.path(dest,file),mode = "wb")
+    dest_path <- file.path(dest,file)
+    if(!file.exists(dest_path)){
+      download.file(url, dest_path,mode = "wb")
+    }else{
+      message(glue::glue("{dest_path} already exists, skipping"))
+    }
 
   }
 
