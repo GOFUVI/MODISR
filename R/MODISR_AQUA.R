@@ -87,7 +87,7 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
   return(out)
 }
 
-
+#' @export
 modisr_aqua_download_files <- function(files, dest, key, workers = 1) {
 
 
