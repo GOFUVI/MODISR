@@ -188,7 +188,7 @@ return(rdata_dest_path)
 
 }
 
-file_paths <- files$to_download %>% furrr::future_map_chr(download_and_read_oceandata_file)
+file_paths <- files$to_download %>% furrr::future_map_chr(download_and_read_oceandata_file,.progress = TRUE)
 
 
 
