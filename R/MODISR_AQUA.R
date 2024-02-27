@@ -121,6 +121,7 @@ return(bins)
 }
 
 #'@export
+
 modisr_aqua_download_and_read_data <- function(files, dest, key, workers = 1,vars= NULL, is_binned = FALSE, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), bins = NULL, landmask = NULL){
 
 

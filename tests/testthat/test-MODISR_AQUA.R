@@ -269,6 +269,7 @@ expect_equal(sort(list.files(target_folder,full.names = T)), test$downloaded_fil
 })
 
 
+
 describe("modisr_aqua_download_and_read_data",{
 
   it("should download all the files in a search result to a target folder and return the search results with the file paths added",{
@@ -294,6 +295,7 @@ describe("modisr_aqua_download_and_read_data",{
     unlink(target_folder,force = T,recursive = T)
 
     dir.create(target_folder)
+
 
     test <- modisr_aqua_download_and_read_data(files,target_folder, (readLines(here::here("tests/testthat/key"))),workers = 1,bounding_box = bounding_box, is_binned = TRUE)
 
