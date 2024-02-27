@@ -168,7 +168,7 @@ download_and_read_oceandata_file <- function(file){
   rdata_dest_path <- file.path(dest,rdata_file)
 
 
-  if(!file.exists(rdata_dest_path)){
+  if (!file.exists(rdata_dest_path)) {
 
     url <- sprintf("https://oceandata.sci.gsfc.nasa.gov/ob/getfile/%s?appkey=%s", file, key)
 
@@ -180,6 +180,7 @@ download_and_read_oceandata_file <- function(file){
 
     save(data, file = rdata_dest_path)
 
+    file.remove(temp_dest_path)
 
   }else{
     message(glue::glue("{rdata_dest_path} already exists, skipping"))
@@ -205,7 +206,7 @@ modisr_aqua_extract_filename_from_file_list <- function(files){
   return(files)
 }
 
-#' @export
+
 modisr_aqua_download_files <- function(files, dest, key, workers = 1) {
 
 
@@ -508,6 +509,8 @@ modisr_aqua_read_file_vars <- function(file, vars= NULL, is_binned = FALSE, boun
 
 
 }
+
+
 
 
 modisr_aqua_read_data_from_folder <- function(folder, vars= NULL, is_binned = FALSE, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), workers = 1, bins = NULL, landmask = NULL){
