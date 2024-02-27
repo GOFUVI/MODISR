@@ -2,6 +2,7 @@
 
 export("%<>%")
 export("%>%")
+export(modisr_aqua_download_and_read_data)
 export(modisr_aqua_download_files)
 export(modisr_aqua_list_files)
 export(modisr_aqua_read_file_metadata)
