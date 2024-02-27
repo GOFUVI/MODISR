@@ -269,7 +269,7 @@ expect_equal(sort(list.files(target_folder,full.names = T)), test$downloaded_fil
 })
 
 
-describe("modis_aqua_download_and_read_data",{
+describe("modisr_aqua_download_and_read_data",{
 
   it("should download all the files in a search result to a target folder and return the search results with the file paths added",{
 
@@ -295,7 +295,7 @@ describe("modis_aqua_download_and_read_data",{
 
     dir.create(target_folder)
 
-    test <- modis_aqua_download_and_read_data(files,target_folder, (readLines(here::here("tests/testthat/key"))),workers = 1,bounding_box = bounding_box, is_binned = TRUE)
+    test <- modisr_aqua_download_and_read_data(files,target_folder, (readLines(here::here("tests/testthat/key"))),workers = 1,bounding_box = bounding_box, is_binned = TRUE)
 
 
     expect_equal(sort(list.files(target_folder,full.names = T)), test$downloaded_file_path)
