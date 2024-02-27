@@ -91,7 +91,7 @@ modisr_get_gshhg_landmask <- function(bounding_box = list(n_lat = 90, s_lat = -9
 
   bbox %<>%
     dplyr::summarise(geometry = sf::st_combine(geometry)) %>%
-    st_cast("POLYGON")
+    sf::st_cast("POLYGON")
 
 
   sf::sf_use_s2(FALSE)
