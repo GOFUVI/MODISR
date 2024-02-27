@@ -510,8 +510,33 @@ modisr_aqua_read_file_vars <- function(file, vars= NULL, is_binned = FALSE, boun
 
 }
 
+#' @export
+modisr_ts_from_folder <- function(folder, workers = 1){
+
+  files <- list.files(folder, pattern = "*\\.RData", full.names = T)
+  future::plan("multisession", workers = workers)
+
+  out <- files %>% furrr::future_map(\(filepath){
+
+    var <- load(filepath)
+
+    data <- get(var[1])
+
+    meta <- attr(data,"metadata",exact = T)
+
+    result <- data.frame( time_coverage_start=meta$global$time_coverage_start,time_coverage_end= meta$global$time_coverage_end, filepath=filepath)
 
 
+  }, .progress = TRUE)
+
+
+
+  out %<>% dplyr::bind_rows() %>% dplyr::arrange(time_coverage_start)
+
+
+
+  return(out)
+}
 
 modisr_aqua_read_data_from_folder <- function(folder, vars= NULL, is_binned = FALSE, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), workers = 1, bins = NULL, landmask = NULL){
 

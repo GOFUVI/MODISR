@@ -514,3 +514,43 @@ it("should return the proportion of missing bins",{
 })
 
 })
+
+
+describe("modisr_ts_from_folder",{
+
+  it("should read all the files in a folder and then create ts of path pointers",{
+
+    skip_if_offline()
+    skip_on_cran()
+
+
+    n_lat  <- 44
+    s_lat <- 42
+    w_lon <- -10
+    e_lon <- -8
+
+
+    bounding_box <- list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon)
+
+    files <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned SST",time_resolution = "DAY",temporal = c("2023-07-01","2023-08-31"),max_results = 10,bounding_box = bounding_box)
+
+    temp_dir <- tempdir()
+
+    target_folder <- file.path(temp_dir, "MODISR")
+
+    unlink(target_folder,force = T,recursive = T)
+
+    dir.create(target_folder)
+
+    files <- modisr_aqua_download_and_read_data(files,target_folder, (readLines(here::here("tests/testthat/key"))),workers = 1,bounding_box = bounding_box,is_binned = TRUE)
+
+    test <- modisr_ts_from_folder(target_folder, workers = 2)
+
+
+
+    expect_snapshot_value(test, style = "json2")
+
+
+  })
+
+})
