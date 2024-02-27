@@ -269,6 +269,44 @@ expect_equal(sort(list.files(target_folder,full.names = T)), test$downloaded_fil
 })
 
 
+describe("modis_aqua_download_and_read_data",{
+
+  it("should download all the files in a search result to a target folder and return the search results with the file paths added",{
+
+    skip_if_offline()
+    skip_on_cran()
+
+    n_lat  <- 44
+    s_lat <- 42
+    w_lon <- -10
+    e_lon <- -8
+
+
+    bounding_box <- list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon)
+
+    files <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned SST",time_resolution = "DAY",temporal = c("2023-07-01","2023-08-31"),max_results = 10,bounding_box = bounding_box)
+
+
+    temp_dir <- tempdir()
+
+    target_folder <- file.path(temp_dir, "MODISR")
+
+    unlink(target_folder,force = T,recursive = T)
+
+    dir.create(target_folder)
+
+    test <- modis_aqua_download_and_read_data(files,target_folder, (readLines(here::here("tests/testthat/key"))),workers = 1,bounding_box = bounding_box, is_binned = TRUE)
+
+
+    expect_equal(sort(list.files(target_folder,full.names = T)), test$downloaded_file_path)
+
+
+
+
+  })
+
+})
+
 
 describe("modisr_aqua_matrix_data_from_folder",{
 

@@ -87,13 +87,130 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
   return(out)
 }
 
+modis_compute_bins_for_bounding_box <- function(bounding_box, buffer, numrows, landmask = NULL){
+
+  bins <- bounding_box2bins(bounding_box$n_lat, bounding_box$s_lat, bounding_box$w_lon, bounding_box$e_lon, numrows)
+  if(!isFALSE(landmask)){
+
+
+
+
+
+
+    units(buffer) <- "km"
+
+    landmask %<>% sf::st_buffer(buffer)
+
+
+    bins_sf <- sf::st_as_sf(bins,coords = c("lon","lat"))
+
+    sf::st_crs(bins_sf) <- 4326
+
+    crs <-modisr_get_crs_sinu()
+    bins_sf %<>% sf::st_transform(crs)
+
+    bins_masked <- sf::st_filter(bins_sf,landmask)
+
+    bins %<>% dplyr::filter(!bin %in% bins_masked$bin)
+
+
+
+
+  }
+return(bins)
+}
+
+#'@export
+modis_aqua_download_and_read_data <- function(files, dest, key, workers = 1,vars= NULL, is_binned = FALSE, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), bins = NULL, landmask = NULL){
+
+
+
+
+temp_process_folder <- tempfile("MODISR_download_and_read_data")
+
+dir.create(temp_process_folder,recursive = T)
+first_file <- files %>% dplyr::slice(1)
+
+
+first_file <- modisr_aqua_download_files(first_file, dest = temp_process_folder, key = key, workers = 1)
+
+
+
+
+
+
+  if(is.null(landmask)){
+
+    landmask <- modisr_get_gshhg_landmask(bounding_box)
+
+  }
+
+  if(is.null(bins)){
+
+    bins <- modisr_aqua_read_file_vars(first_file$downloaded_file_path,is_binned = is_binned, bounding_box = bounding_box,bins =  bins, landmask = landmask) %>% attr("bins")
+
+
+  }
+
+future::plan("multisession", workers = workers)
+
+files %<>% modisr_aqua_extract_filename_from_file_list()
+
+
+download_and_read_oceandata_file <- function(file){
+
+
+
+
+  rdata_file <- paste0(tools::file_path_sans_ext(file),".RData")
+
+  rdata_dest_path <- file.path(dest,rdata_file)
+
+
+  if(!file.exists(rdata_dest_path)){
+
+    url <- sprintf("https://oceandata.sci.gsfc.nasa.gov/ob/getfile/%s?appkey=%s", file, key)
+
+    temp_dest_path <- file.path(temp_process_folder,file)
+
+    download.file(url, temp_dest_path,mode = "wb")
+
+    data <- modisr_aqua_read_file_vars(temp_dest_path,vars = vars, is_binned = is_binned,bounding_box = bounding_box, bins = bins, landmask = landmask)
+
+    save(data, file = rdata_dest_path)
+
+
+  }else{
+    message(glue::glue("{rdata_dest_path} already exists, skipping"))
+  }
+return(rdata_dest_path)
+
+}
+
+file_paths <- files$to_download %>% furrr::future_map_chr(download_and_read_oceandata_file)
+
+
+
+files$downloaded_file_path <- file_paths
+
+return(files)
+
+}
+
+modisr_aqua_extract_filename_from_file_list <- function(files){
+
+  files %<>% dplyr::mutate(to_download = stringr::str_remove(GranuleUR, paste0(CollectionReference$Version,"_",CollectionReference$ShortName,"_")))
+
+  return(files)
+}
+
 #' @export
 modisr_aqua_download_files <- function(files, dest, key, workers = 1) {
 
 
   future::plan("multisession", workers = workers)
 
-  files %<>% dplyr::mutate(to_download = stringr::str_remove(GranuleUR, paste0(CollectionReference$Version,"_",CollectionReference$ShortName,"_")))
+  files %<>% modisr_aqua_extract_filename_from_file_list()
 
 
   download_oceandata_file <- function(file){
@@ -343,35 +460,9 @@ modisr_aqua_read_vars <- function(con, vars= NULL, is_binned = FALSE, bounding_b
     }
 
     if(is.null(bins)){
+      buffer <- as.numeric(stringr::str_extract(meta$global$spatialResolution,"[\\d\\.]*"))
+      bins <- modis_compute_bins_for_bounding_box(bounding_box = bounding_box, buffer = buffer,numrows = numrows,landmask = landmask)
 
-      bins <- bounding_box2bins(bounding_box$n_lat, bounding_box$s_lat, bounding_box$w_lon, bounding_box$e_lon, numrows)
-      if(!isFALSE(landmask)){
-
-
-
-
-        buffer <- as.numeric(stringr::str_extract(meta$global$spatialResolution,"[\\d\\.]*"))
-
-        units(buffer) <- "km"
-
-        landmask %<>% sf::st_buffer(buffer)
-
-
-        bins_sf <- sf::st_as_sf(bins,coords = c("lon","lat"))
-
-        sf::st_crs(bins_sf) <- 4326
-
-        crs <-modisr_get_crs_sinu()
-        bins_sf %<>% sf::st_transform(crs)
-
-        bins_masked <- sf::st_filter(bins_sf,landmask)
-
-        bins %<>% dplyr::filter(!bin %in% bins_masked$bin)
-
-
-
-
-      }
 
     }
 
