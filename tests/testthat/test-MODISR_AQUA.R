@@ -554,3 +554,64 @@ describe("modisr_ts_from_folder",{
   })
 
 })
+
+describe("modisr_process_ts_binned",{
+
+
+  n_lat  <- 44
+  s_lat <- 42
+  w_lon <- -10
+  e_lon <- -8
+
+
+  bounding_box <- list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon)
+
+  files <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned SST",time_resolution = "DAY",temporal = c("2023-07-01","2023-08-31"),max_results = 10,bounding_box = bounding_box)
+
+  temp_dir <- tempdir()
+
+  target_folder <- file.path(temp_dir, "MODISR")
+
+  unlink(target_folder,force = T,recursive = T)
+
+  dir.create(target_folder)
+
+  files <- modisr_aqua_download_and_read_data(files,target_folder, (readLines(here::here("tests/testthat/key"))),workers = 1,bounding_box = bounding_box,is_binned = TRUE)
+
+  ts <- modisr_ts_from_folder(target_folder, workers = 2)
+
+times_two <- function(data){
+
+  data$sst$sum %<>% magrittr::multiply_by(2)
+
+return(data)
+
+
+}
+
+add_three <-  function(data){
+
+  data$sst$sum %<>% magrittr::add(3)
+
+  return(data)
+
+
+}
+
+average_tss <- function(data){
+
+  out <- mean(data$sst$sum/data$BinList$weights, na.rm = TRUE)
+
+  return(out)
+
+}
+
+my_steps <- list(step_one = list(fun = add_three, type = "transform"),
+              step_two = list(fun = times_two, type = "transform"),
+              step_three = list(fun = average_tss, type = "summary", colname = "mean_TSS")
+              )
+
+
+ts <- modisr_process_ts_binned(ts, steps = my_steps)
+
+})
