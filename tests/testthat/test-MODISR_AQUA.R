@@ -606,7 +606,15 @@ average_tss <- function(data){
 
 }
 
-my_steps <- list(step_one = list(fun = add_three, type = "transform"),
+filter_fun <- function(data){
+
+  data$sst$sum/data$BinList$weights >18
+
+}
+
+my_steps <- list(
+              filter_step = list(fun = "filter", type = "transform", fun_parameters = list(filter_fun = filter_fun)),
+              step_one = list(fun = add_three, type = "transform"),
               step_two = list(fun = times_two, type = "transform"),
               step_three = list(fun = average_tss, type = "summary", colname = "mean_TSS"),
               step_four = list(fun = "total_data_area", type = "summary", colname = "area")

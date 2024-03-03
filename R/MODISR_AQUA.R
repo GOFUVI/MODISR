@@ -510,9 +510,29 @@ modisr_aqua_read_file_vars <- function(file, vars= NULL, is_binned = FALSE, boun
 
 }
 
+modisr_filter_binned_data <- function(data, filter_fun ){
+
+  out <- data
+
+  bins_to_keep <- which(filter_fun(data))
+
+  out %<>% purrr::map(\(df) df %>% dplyr::slice(bins_to_keep)) %>% magrittr::set_attributes(attributes(out))
+
+return(out)
+
+
+}
+
+
 modisr_get_binned_transform_fun <-function(step_fun){
 
-  stop("Unknown step function")
+  out <- switch (step_fun,
+                 filter = modisr_filter_binned_data,
+                 stop("Unknown step function")
+  )
+
+  return(out)
+
 
 }
 
