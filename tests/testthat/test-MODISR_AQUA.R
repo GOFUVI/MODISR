@@ -612,6 +612,10 @@ my_steps <- list(step_one = list(fun = add_three, type = "transform"),
               )
 
 
-ts <- modisr_process_ts_binned(ts, steps = my_steps)
+
+
+test <- modisr_process_ts_binned(ts, steps = my_steps)
+
+expect_snapshot_value(test)
 
 })
