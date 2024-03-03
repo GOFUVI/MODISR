@@ -510,6 +510,35 @@ modisr_aqua_read_file_vars <- function(file, vars= NULL, is_binned = FALSE, boun
 
 }
 
+modisr_get_transform_fun <-function(step_fun){
+
+  stop("Unknown step function")
+
+}
+
+modisr_process_ts_binned_transform_step <- function(x, step){
+  step_fun <- step$fun
+
+  if(is.character(step_fun)){
+    fun_parameters <- step$fun_parameters
+    step_fun <- modisr_get_transform_fun(step_fun)
+    step_fun <- purrr::partial(step_fun,!!!fun_parameters)
+  }
+
+  x$row_data %<>% step_fun()
+
+  return(x)
+}
+
+
+modisr_process_ts_binned_summary_step <- function(x, step){
+  step_fun <- step$fun
+  x$row_data %<>% step_fun()
+
+  return(x)
+}
+
+
 #' @export
 modisr_process_ts_binned <- function(ts, steps = list()){
 
@@ -522,19 +551,17 @@ modisr_process_ts_binned <- function(ts, steps = list()){
 
     processed_row <- steps %>% purrr::reduce(\(result_so_far, step){
 
-        type <- step$type
+      type <- step$type
 
-        if(type == "transform"){
+      if(type == "transform"){
+        modisr_process_ts_binned_transform_step(result_so_far, step)
+
+      }else if(type == "summary"){
         step_fun <- step$fun
-          result_so_far$row_data %>% step_fun()
-        }else if(type == "summary"){
+        result_so_far$ts_row[,step$colname] <- step_fun(result_so_far$row_data)
+      }
 
-
-          step_fun <- step$fun
-          result_so_far$ts_row[,step$colname] <- step_fun(result_so_far$row_data)
-        }
-
-        return(result_so_far)
+      return(result_so_far)
 
     },.init = list(ts_row = ts_row, row_data= row_data))
 
@@ -544,7 +571,7 @@ modisr_process_ts_binned <- function(ts, steps = list()){
 
   }) %>% dplyr::bind_rows()
 
-return(out)
+  return(out)
 
 
 }
