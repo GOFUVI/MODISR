@@ -516,6 +516,14 @@ modisr_get_transform_fun <-function(step_fun){
 
 }
 
+
+modisr_get_summary_fun <-function(step_fun){
+
+  stop("Unknown step function")
+
+}
+
+
 modisr_process_ts_binned_transform_step <- function(x, step){
   step_fun <- step$fun
 
@@ -533,7 +541,13 @@ modisr_process_ts_binned_transform_step <- function(x, step){
 
 modisr_process_ts_binned_summary_step <- function(x, step){
   step_fun <- step$fun
-  x$row_data %<>% step_fun()
+
+  if(is.character(step_fun)){
+    fun_parameters <- step$fun_parameters
+    step_fun <- modisr_get_summary_fun(step_fun)
+    step_fun <- purrr::partial(step_fun,!!!fun_parameters)
+  }
+  x$ts_row[,step$colname] <- step_fun(x$row_data)
 
   return(x)
 }
@@ -554,11 +568,10 @@ modisr_process_ts_binned <- function(ts, steps = list()){
       type <- step$type
 
       if(type == "transform"){
-        modisr_process_ts_binned_transform_step(result_so_far, step)
+        result_so_far %<>% modisr_process_ts_binned_transform_step( step)
 
       }else if(type == "summary"){
-        step_fun <- step$fun
-        result_so_far$ts_row[,step$colname] <- step_fun(result_so_far$row_data)
+        result_so_far %<>% modisr_process_ts_binned_summary_step( step)
       }
 
       return(result_so_far)
