@@ -612,8 +612,24 @@ filter_fun <- function(data){
 
 }
 
+pre_plot_folder <- file.path(temp_dir, "pre_plot")
+
+unlink(pre_plot_folder,force = T,recursive = T)
+
+dir.create(pre_plot_folder)
+
+
+post_plot_folder <- file.path(temp_dir, "post_plot")
+
+unlink(post_plot_folder,force = T,recursive = T)
+
+dir.create(post_plot_folder)
+
+
 my_steps <- list(
+              pre_filter_plot <- list(fun = "plot_binned_data", type = "plot", folder = pre_plot_folder, fun_parameters = list(var = "sst_sum")),
               filter_step = list(fun = "filter", type = "transform", fun_parameters = list(filter_fun = filter_fun)),
+              post_filter_plot <- list(fun = "plot_binned_data", type = "plot", folder = post_plot_folder , fun_parameters = list(var = "sst_sum")),
               step_one = list(fun = add_three, type = "transform"),
               step_two = list(fun = times_two, type = "transform"),
               step_three = list(fun = average_tss, type = "summary", colname = "mean_TSS"),
