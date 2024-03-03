@@ -511,6 +511,19 @@ modisr_aqua_read_file_vars <- function(file, vars= NULL, is_binned = FALSE, boun
 }
 
 
+modisr_get_binned_plot_fun <-function(step_fun){
+
+  out <- switch (step_fun,
+                 plot_binned_data = modisr_plot_binned_data,
+                 stop("Unknown step function")
+  )
+
+  return(out)
+
+
+}
+
+
 modisr_filter_binned_data <- function(data, filter_fun ){
 
   out <- data
@@ -590,6 +603,22 @@ modisr_process_ts_binned_summary_step <- function(x, step){
 }
 
 
+modisr_process_ts_binned_plot_step <- function(x, step){
+  step_fun <- step$fun
+
+  if(is.character(step_fun)){
+    fun_parameters <- step$fun_parameters
+    step_fun <- modisr_get_binned_plot_fun(step_fun)
+    step_fun <- purrr::partial(step_fun,!!!fun_parameters)
+  }
+
+  plot.path <- file.path(step$folder,paste0(tools::file_path_sans_ext(basename(x$ts_row$filepath )),".png"))
+
+ggplot2::ggsave(plot = step_fun(x$row_data),device = "png",filename = plot.path)
+
+  invisible(NULL)
+}
+
 #' @export
 modisr_process_ts_binned <- function(ts, steps = list()){
 
@@ -609,6 +638,9 @@ modisr_process_ts_binned <- function(ts, steps = list()){
 
       }else if(type == "summary"){
         result_so_far %<>% modisr_process_ts_binned_summary_step( step)
+
+      }else if(type == "plot"){
+        result_so_far %>% modisr_process_ts_binned_plot_step( step)
       }
 
       return(result_so_far)
