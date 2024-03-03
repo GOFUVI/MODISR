@@ -510,16 +510,32 @@ modisr_aqua_read_file_vars <- function(file, vars= NULL, is_binned = FALSE, boun
 
 }
 
-modisr_get_transform_fun <-function(step_fun){
+modisr_get_binned_transform_fun <-function(step_fun){
 
   stop("Unknown step function")
 
 }
 
 
-modisr_get_summary_fun <-function(step_fun){
+modisr_compute_total_data_area_binned <-  function(data){
 
-  stop("Unknown step function")
+  out <- modisr_compute_total_data_area(data, is_binned = TRUE)
+
+  return(out)
+
+}
+
+
+
+
+modisr_get_binned_summary_fun <-function(step_fun){
+
+  out <- switch (step_fun,
+    total_data_area = modisr_compute_total_data_area_binned,
+    stop("Unknown step function")
+  )
+
+return(out)
 
 }
 
@@ -529,7 +545,7 @@ modisr_process_ts_binned_transform_step <- function(x, step){
 
   if(is.character(step_fun)){
     fun_parameters <- step$fun_parameters
-    step_fun <- modisr_get_transform_fun(step_fun)
+    step_fun <- modisr_get_binned_transform_fun(step_fun)
     step_fun <- purrr::partial(step_fun,!!!fun_parameters)
   }
 
@@ -544,7 +560,7 @@ modisr_process_ts_binned_summary_step <- function(x, step){
 
   if(is.character(step_fun)){
     fun_parameters <- step$fun_parameters
-    step_fun <- modisr_get_summary_fun(step_fun)
+    step_fun <- modisr_get_binned_summary_fun(step_fun)
     step_fun <- purrr::partial(step_fun,!!!fun_parameters)
   }
   x$ts_row[,step$colname] <- step_fun(x$row_data)
@@ -712,6 +728,8 @@ modisr_filter <- function(data, conds, is_binned = FALSE){
   return(out)
 
 }
+
+
 
 
 #' @export
