@@ -510,6 +510,7 @@ modisr_aqua_read_file_vars <- function(file, vars= NULL, is_binned = FALSE, boun
 
 }
 
+
 modisr_filter_binned_data <- function(data, filter_fun ){
 
   out <- data
