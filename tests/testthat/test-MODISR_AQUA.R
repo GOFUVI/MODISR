@@ -554,3 +554,93 @@ describe("modisr_ts_from_folder",{
   })
 
 })
+
+describe("modisr_process_ts_binned",{
+
+
+  n_lat  <- 44
+  s_lat <- 42
+  w_lon <- -10
+  e_lon <- -8
+
+
+  bounding_box <- list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon)
+
+  files <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned SST",time_resolution = "DAY",temporal = c("2023-07-01","2023-08-31"),max_results = 10,bounding_box = bounding_box)
+
+  temp_dir <- tempdir()
+
+  target_folder <- file.path(temp_dir, "MODISR")
+
+  unlink(target_folder,force = T,recursive = T)
+
+  dir.create(target_folder)
+
+  files <- modisr_aqua_download_and_read_data(files,target_folder, (readLines(here::here("tests/testthat/key"))),workers = 1,bounding_box = bounding_box,is_binned = TRUE)
+
+  ts <- modisr_ts_from_folder(target_folder, workers = 2)
+
+times_two <- function(data){
+
+  data$sst$sum %<>% magrittr::multiply_by(2)
+
+return(data)
+
+
+}
+
+add_three <-  function(data){
+
+  data$sst$sum %<>% magrittr::add(3)
+
+  return(data)
+
+
+}
+
+average_tss <- function(data){
+
+  out <- mean(data$sst$sum/data$BinList$weights, na.rm = TRUE)
+
+  return(out)
+
+}
+
+filter_fun <- function(data){
+
+  data$sst$sum/data$BinList$weights >18
+
+}
+
+pre_plot_folder <- file.path(temp_dir, "pre_plot")
+
+unlink(pre_plot_folder,force = T,recursive = T)
+
+dir.create(pre_plot_folder)
+
+
+post_plot_folder <- file.path(temp_dir, "post_plot")
+
+unlink(post_plot_folder,force = T,recursive = T)
+
+dir.create(post_plot_folder)
+
+
+my_steps <- list(
+              pre_filter_plot <- list(fun = "plot_binned_data", type = "plot", folder = pre_plot_folder, fun_parameters = list(var = "sst_sum")),
+              filter_step = list(fun = "filter", type = "transform", fun_parameters = list(filter_fun = filter_fun)),
+              post_filter_plot <- list(fun = "plot_binned_data", type = "plot", folder = post_plot_folder , fun_parameters = list(var = "sst_sum")),
+              step_one = list(fun = add_three, type = "transform"),
+              step_two = list(fun = times_two, type = "transform"),
+              step_three = list(fun = average_tss, type = "summary", colname = "mean_TSS"),
+              step_four = list(fun = "total_data_area", type = "summary", colname = "area")
+              )
+
+
+
+
+test <- modisr_process_ts_binned(ts, steps = my_steps)
+
+expect_snapshot_value(test)
+
+})

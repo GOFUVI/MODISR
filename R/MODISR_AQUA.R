@@ -117,7 +117,7 @@ modis_compute_bins_for_bounding_box <- function(bounding_box, buffer, numrows, l
 
 
   }
-return(bins)
+  return(bins)
 }
 
 #'@export
@@ -127,13 +127,13 @@ modisr_aqua_download_and_read_data <- function(files, dest, key, workers = 1,var
 
 
 
-temp_process_folder <- tempfile("MODISR_download_and_read_data")
+  temp_process_folder <- tempfile("MODISR_download_and_read_data")
 
-dir.create(temp_process_folder,recursive = T)
-first_file <- files %>% dplyr::slice(1)
+  dir.create(temp_process_folder,recursive = T)
+  first_file <- files %>% dplyr::slice(1)
 
 
-first_file <- modisr_aqua_download_files(first_file, dest = temp_process_folder, key = key, workers = 1)
+  first_file <- modisr_aqua_download_files(first_file, dest = temp_process_folder, key = key, workers = 1)
 
 
 
@@ -153,49 +153,49 @@ first_file <- modisr_aqua_download_files(first_file, dest = temp_process_folder,
 
   }
 
-future::plan("multisession", workers = workers)
+  future::plan("multisession", workers = workers)
 
-files %<>% modisr_aqua_extract_filename_from_file_list()
-
-
-download_and_read_oceandata_file <- function(file){
+  files %<>% modisr_aqua_extract_filename_from_file_list()
 
 
+  download_and_read_oceandata_file <- function(file){
 
 
-  rdata_file <- paste0(tools::file_path_sans_ext(file),".RData")
-
-  rdata_dest_path <- file.path(dest,rdata_file)
 
 
-  if (!file.exists(rdata_dest_path)) {
+    rdata_file <- paste0(tools::file_path_sans_ext(file),".RData")
 
-    url <- sprintf("https://oceandata.sci.gsfc.nasa.gov/ob/getfile/%s?appkey=%s", file, key)
+    rdata_dest_path <- file.path(dest,rdata_file)
 
-    temp_dest_path <- file.path(temp_process_folder,file)
 
-    download.file(url, temp_dest_path,mode = "wb")
+    if (!file.exists(rdata_dest_path)) {
 
-    data <- modisr_aqua_read_file_vars(temp_dest_path,vars = vars, is_binned = is_binned,bounding_box = bounding_box, bins = bins, landmask = landmask)
+      url <- sprintf("https://oceandata.sci.gsfc.nasa.gov/ob/getfile/%s?appkey=%s", file, key)
 
-    save(data, file = rdata_dest_path)
+      temp_dest_path <- file.path(temp_process_folder,file)
 
-    file.remove(temp_dest_path)
+      download.file(url, temp_dest_path,mode = "wb")
 
-  }else{
-    message(glue::glue("{rdata_dest_path} already exists, skipping"))
+      data <- modisr_aqua_read_file_vars(temp_dest_path,vars = vars, is_binned = is_binned,bounding_box = bounding_box, bins = bins, landmask = landmask)
+
+      save(data, file = rdata_dest_path)
+
+      file.remove(temp_dest_path)
+
+    }else{
+      message(glue::glue("{rdata_dest_path} already exists, skipping"))
+    }
+    return(rdata_dest_path)
+
   }
-return(rdata_dest_path)
 
-}
-
-file_paths <- files$to_download %>% furrr::future_map_chr(download_and_read_oceandata_file,.progress = TRUE)
+  file_paths <- files$to_download %>% furrr::future_map_chr(download_and_read_oceandata_file,.progress = TRUE)
 
 
 
-files$downloaded_file_path <- file_paths
+  files$downloaded_file_path <- file_paths
 
-return(files)
+  return(files)
 
 }
 
@@ -510,6 +510,154 @@ modisr_aqua_read_file_vars <- function(file, vars= NULL, is_binned = FALSE, boun
 
 }
 
+
+modisr_get_binned_plot_fun <-function(step_fun){
+
+  out <- switch (step_fun,
+                 plot_binned_data = modisr_plot_binned_data,
+                 stop("Unknown step function")
+  )
+
+  return(out)
+
+
+}
+
+
+modisr_filter_binned_data <- function(data, filter_fun ){
+
+  out <- data
+
+  bins_to_keep <- which(filter_fun(data))
+
+  out %<>% purrr::map(\(df) df %>% dplyr::slice(bins_to_keep)) %>% magrittr::set_attributes(attributes(out))
+
+return(out)
+
+
+}
+
+
+modisr_get_binned_transform_fun <-function(step_fun){
+
+  out <- switch (step_fun,
+                 filter = modisr_filter_binned_data,
+                 stop("Unknown step function")
+  )
+
+  return(out)
+
+
+}
+
+
+modisr_compute_total_data_area_binned <-  function(data){
+
+  out <- modisr_compute_total_data_area(data, is_binned = TRUE)
+
+  return(out)
+
+}
+
+
+
+
+modisr_get_binned_summary_fun <-function(step_fun){
+
+  out <- switch (step_fun,
+    total_data_area = modisr_compute_total_data_area_binned,
+    stop("Unknown step function")
+  )
+
+return(out)
+
+}
+
+
+modisr_process_ts_binned_transform_step <- function(x, step){
+  step_fun <- step$fun
+
+  if(is.character(step_fun)){
+    fun_parameters <- step$fun_parameters
+    step_fun <- modisr_get_binned_transform_fun(step_fun)
+    step_fun <- purrr::partial(step_fun,!!!fun_parameters)
+  }
+
+  x$row_data %<>% step_fun()
+
+  return(x)
+}
+
+
+modisr_process_ts_binned_summary_step <- function(x, step){
+  step_fun <- step$fun
+
+  if(is.character(step_fun)){
+    fun_parameters <- step$fun_parameters
+    step_fun <- modisr_get_binned_summary_fun(step_fun)
+    step_fun <- purrr::partial(step_fun,!!!fun_parameters)
+  }
+  x$ts_row[,step$colname] <- step_fun(x$row_data)
+
+  return(x)
+}
+
+
+modisr_process_ts_binned_plot_step <- function(x, step){
+  step_fun <- step$fun
+
+  if(is.character(step_fun)){
+    fun_parameters <- step$fun_parameters
+    step_fun <- modisr_get_binned_plot_fun(step_fun)
+    step_fun <- purrr::partial(step_fun,!!!fun_parameters)
+  }
+
+  plot.path <- file.path(step$folder,paste0(tools::file_path_sans_ext(basename(x$ts_row$filepath )),".png"))
+
+ggplot2::ggsave(plot = step_fun(x$row_data),device = "png",filename = plot.path)
+
+  invisible(NULL)
+}
+
+#' @export
+modisr_process_ts_binned <- function(ts, steps = list()){
+
+
+  out <- 1:nrow(ts) %>% purrr::map(\(i){
+    ts_row <- ts %>% dplyr::slice(i)
+    vars <- load(ts_row$filepath[1])
+
+    row_data <- get(vars[1])
+
+    processed_row <- steps %>% purrr::reduce(\(result_so_far, step){
+
+      type <- step$type
+
+      if(type == "transform"){
+        result_so_far %<>% modisr_process_ts_binned_transform_step( step)
+
+      }else if(type == "summary"){
+        result_so_far %<>% modisr_process_ts_binned_summary_step( step)
+
+      }else if(type == "plot"){
+        result_so_far %>% modisr_process_ts_binned_plot_step( step)
+      }
+
+      return(result_so_far)
+
+    },.init = list(ts_row = ts_row, row_data= row_data))
+
+    result <- processed_row$ts_row
+
+    return(result)
+
+  }) %>% dplyr::bind_rows()
+
+  return(out)
+
+
+}
+
 #' @export
 modisr_ts_from_folder <- function(folder, workers = 1){
 
@@ -633,6 +781,8 @@ modisr_filter <- function(data, conds, is_binned = FALSE){
   return(out)
 
 }
+
+
 
 
 #' @export
