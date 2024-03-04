@@ -18,6 +18,7 @@ Imports:
     furrr,
     future,
     glue,
+    jsonlite,
     magrittr,
     ncdf4,
     purrr,
