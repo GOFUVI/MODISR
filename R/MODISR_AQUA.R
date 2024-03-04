@@ -585,6 +585,15 @@ modisr_process_ts_binned_transform_step <- function(x, step){
 
   x$row_data %<>% step_fun()
 
+  if(!is.null(step$save_folder)){
+    save.path <- file.path(step$save_folder,basename(x$ts_row$filepath ))
+
+    data <- x$row_data
+
+    save(data,file = save.path)
+
+  }
+
   return(x)
 }
 
@@ -620,10 +629,11 @@ ggplot2::ggsave(plot = step_fun(x$row_data),device = "png",filename = plot.path)
 }
 
 #' @export
-modisr_process_ts_binned <- function(ts, steps = list()){
+modisr_process_ts_binned <- function(ts, steps = list(), workers = 1){
 
+  future::plan("multisession", workers = workers)
 
-  out <- 1:nrow(ts) %>% purrr::map(\(i){
+  out <- 1:nrow(ts) %>% furrr::future_map(\(i){
     ts_row <- ts %>% dplyr::slice(i)
     vars <- load(ts_row$filepath[1])
 
@@ -651,7 +661,7 @@ modisr_process_ts_binned <- function(ts, steps = list()){
 
     return(result)
 
-  }) %>% dplyr::bind_rows()
+  },.options = furrr::furrr_options(seed = TRUE)) %>% dplyr::bind_rows()
 
   return(out)
 

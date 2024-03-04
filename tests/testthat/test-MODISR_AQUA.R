@@ -576,9 +576,9 @@ describe("modisr_process_ts_binned",{
 
   dir.create(target_folder)
 
-  files <- modisr_aqua_download_and_read_data(files,target_folder, (readLines(here::here("tests/testthat/key"))),workers = 1,bounding_box = bounding_box,is_binned = TRUE)
+  files <- modisr_aqua_download_and_read_data(files,target_folder, (readLines(here::here("tests/testthat/key"))),workers = 4,bounding_box = bounding_box,is_binned = TRUE)
 
-  ts <- modisr_ts_from_folder(target_folder, workers = 2)
+  ts <- modisr_ts_from_folder(target_folder, workers = 4)
 
 times_two <- function(data){
 
@@ -626,9 +626,16 @@ unlink(post_plot_folder,force = T,recursive = T)
 dir.create(post_plot_folder)
 
 
+filtered_folder <- file.path(temp_dir, "filtered")
+
+unlink(filtered_folder,force = T,recursive = T)
+
+dir.create(filtered_folder)
+
+
 my_steps <- list(
               pre_filter_plot <- list(fun = "plot_binned_data", type = "plot", folder = pre_plot_folder, fun_parameters = list(var = "sst_sum")),
-              filter_step = list(fun = "filter", type = "transform", fun_parameters = list(filter_fun = filter_fun)),
+              filter_step = list(fun = "filter", type = "transform", fun_parameters = list(filter_fun = filter_fun), save_folder = filtered_folder),
               post_filter_plot <- list(fun = "plot_binned_data", type = "plot", folder = post_plot_folder , fun_parameters = list(var = "sst_sum")),
               step_one = list(fun = add_three, type = "transform"),
               step_two = list(fun = times_two, type = "transform"),
@@ -639,7 +646,9 @@ my_steps <- list(
 
 
 
-test <- modisr_process_ts_binned(ts, steps = my_steps)
+test <- modisr_process_ts_binned(ts, steps = my_steps, workers = 4)
+
+list.files(filtered_folder)
 
 expect_snapshot_value(test)
 
