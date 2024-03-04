@@ -639,7 +639,7 @@ my_steps <- list(
 
 
 
-test <- modisr_process_ts_binned(ts, steps = my_steps)
+test <- modisr_process_ts_binned(ts, steps = my_steps, workers = 2)
 
 expect_snapshot_value(test)
 

@@ -620,10 +620,11 @@ ggplot2::ggsave(plot = step_fun(x$row_data),device = "png",filename = plot.path)
 }
 
 #' @export
-modisr_process_ts_binned <- function(ts, steps = list()){
+modisr_process_ts_binned <- function(ts, steps = list(), workers = 1){
 
+  future::plan("multisession", workers = workers)
 
-  out <- 1:nrow(ts) %>% purrr::map(\(i){
+  out <- 1:nrow(ts) %>% furrr::future_map(\(i){
     ts_row <- ts %>% dplyr::slice(i)
     vars <- load(ts_row$filepath[1])
 
@@ -651,7 +652,7 @@ modisr_process_ts_binned <- function(ts, steps = list()){
 
     return(result)
 
-  }) %>% dplyr::bind_rows()
+  },.options = furrr::furrr_options(seed = TRUE)) %>% dplyr::bind_rows()
 
   return(out)
 
