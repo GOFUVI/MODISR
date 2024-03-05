@@ -588,9 +588,11 @@ modisr_process_ts_binned_transform_step <- function(x, step){
   if(!is.null(step$save_folder)){
     save.path <- file.path(step$save_folder,basename(x$ts_row$filepath ))
 
-    data <- x$row_data
+    if(step$overwrite_files || !file.exists(save.path)){
+      data <- x$row_data
 
-    save(data,file = save.path)
+      save(data,file = save.path)
+    }
 
   }
 
