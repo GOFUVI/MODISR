@@ -76,15 +76,16 @@ modisr_get_gshhg_shoreline <- function(){
 
 }
 
-#' Projection is sinusoidal
 #' @export
-modisr_get_gshhg_landmask <- function(bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180)){
+modisr_shoreline_for_bbox <- function(bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180)){
 
   shoreline <- modisr_get_gshhg_shoreline()
 
+
+
   bbox <- data.frame(
-    lon=c(e_lon,e_lon,w_lon,w_lon,e_lon),
-    lat=c(s_lat,n_lat,n_lat,s_lat,s_lat)
+    lon=c(bounding_box$e_lon,bounding_box$e_lon,bounding_box$w_lon,bounding_box$w_lon,bounding_box$e_lon),
+    lat=c(bounding_box$s_lat,bounding_box$n_lat,bounding_box$n_lat,bounding_box$s_lat,bounding_box$s_lat)
   ) %>% sf::st_as_sf(coords = c("lon","lat"))
 
   sf::st_crs(bbox) <- 4326
@@ -95,7 +96,17 @@ modisr_get_gshhg_landmask <- function(bounding_box = list(n_lat = 90, s_lat = -9
 
 
   sf::sf_use_s2(FALSE)
-  mask <- sf::st_intersection(shoreline,bbox)
+  out <- sf::st_intersection(shoreline,bbox)
+
+  return(out)
+
+}
+
+#' Projection is sinusoidal
+#' @export
+modisr_get_gshhg_landmask <- function(bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180)){
+
+  mask <- modisr_shoreline_for_bbox(bounding_box = bounding_box)
 
   crs <-modisr_get_crs_sinu()
   mask %<>% sf::st_transform(crs)

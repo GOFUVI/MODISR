@@ -452,7 +452,7 @@ it("should return the total area",{
 
   test_data <- modisr_aqua_read_file_vars(file, is_binned = TRUE, bounding_box = list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon))
 
-  # modisr_plot_binned_data(test_data, var="sst_sum")
+   # modisr_plot_binned_data(test_data, var="sst_sum", shoreline = modisr_shoreline_for_bbox(list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon)))
 
 
   cond_fun1 <- function(df) df$sst_sum/df$weights > 17.5

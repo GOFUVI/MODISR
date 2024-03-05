@@ -832,16 +832,24 @@ modisr_compute_missing_bins_percent <- function(data){
 }
 
 #' @export
-modisr_plot_binned_data <- function(data, var){
+modisr_plot_binned_data <- function(data, var, shoreline = NULL){
 
   data_sf <- modisr_binned_to_sf(data)
+
+
+  data_sf %<>% sf::st_transform(4326)
 
   renaming <- c(var) %>% magrittr::set_names("var")
 
   data_sf %<>% dplyr::rename(renaming)
 
 
-  ggplot2::ggplot(data_sf) + ggplot2::geom_sf(ggplot2::aes(color=var/weights))
+  out <- ggplot2::ggplot(data_sf) + ggplot2::geom_sf(ggplot2::aes(color=var/weights))
 
+  if(!is.null(shoreline)){
+    out <- out + ggplot2::geom_sf(data=shoreline)
+  }
+
+return(out)
 
 }
