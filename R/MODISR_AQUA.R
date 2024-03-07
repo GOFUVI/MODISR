@@ -1,5 +1,18 @@
 modisr_aqua_available_products <- c("MODIS AQUA L2 SST")
 
+#' Map MODIS AQUA Product Names to Short Codes
+#'
+#' @description Maps user-friendly MODIS AQUA product names to their respective
+#'   short codes used in API queries. This function supports mapping for a
+#'   predefined list of products including SST (Sea Surface Temperature) and
+#'   CHL (Chlorophyll) data products.
+#'
+#' @param product A character string specifying the product name.
+#'   Supported product names include "MODIS AQUA L2 SST", "MODIS AQUA L3 Binned SST",
+#'   "MODIS AQUA L3 Binned CHL", and "MODIS AQUA L3 Mapped CHL".
+#' @return A character string of the corresponding short code for the specified product.
+#' @examples
+#' modisr_aqua_product_short_name("MODIS AQUA L2 SST")
 modisr_aqua_product_short_name <- function(product){
 
   c("MODIS AQUA L2 SST" = "MODISA_L2_SST",
@@ -10,79 +23,84 @@ modisr_aqua_product_short_name <- function(product){
 
 }
 
-#' https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html
+#' List MODIS AQUA Data Files from Earthdata Search
+#'
+#' @description Retrieves a list of MODIS AQUA data files available for download
+#'   from the Earthdata Search service (#' https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html). Users can specify the product type, temporal
+#'   range, bounding box for the area of interest, polygon coordinates for more complex
+#'   area shapes, and the temporal resolution of the data files.
+#'
+#' @param product A character string specifying the product name, with a default value
+#'   of "MODIS AQUA L2 SST". See `modisr_aqua_product_short_name` for supported products.
+#' @param max_results An integer specifying the maximum number of results to retrieve,
+#'   with a default value of 20. Use `NULL` to attempt to retrieve all available results.
+#' @param temporal A character vector of length 2 specifying the start and end dates
+#'   for the temporal range of interest in the format "YYYY-MM-DD". Default is `NULL`,
+#'   which means no temporal filter is applied.
+#' @param bounding_box A list specifying the north latitude, south latitude, west longitude,
+#'   and east longitude of the bounding box for the area of interest. Default covers the whole globe.
+#' @param polygon Currently not implemented. Reserved for future use to specify polygon
+#'   coordinates for complex area shapes.
+#' @param time_resolution A character string specifying the temporal resolution of the
+#'   data files. Supported values include "DAY", "MO", "YR", and "8D".
+#' @return A data frame containing the search results, including file URLs and metadata.
+#' @examples
+#' \dontrun{
+#'   # List the first 20 MODIS AQUA L2 SST data files
+#'   files <- modisr_aqua_list_files()
+#'   # List data files for MODIS AQUA L3 Binned CHL with daily resolution
+#'   daily_chl_files <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned CHL",
+#'                                             time_resolution = "DAY")
+#' }
 #' @importFrom rlang %||%
 #' @export
 modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results = 20, temporal = NULL, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), polygon = NULL, time_resolution = NULL){
 
 
+  # Retrieve the short name for the specified product
   short_name <- modisr_aqua_product_short_name(product)
 
+  # Construct the initial search URL with product short name and provider
   url <- glue::glue("https://cmr.earthdata.nasa.gov/search/granules.umm_json?sort_key=short_name&sort_key=start_date&short_name={short_name}&provider=OB_DAAC")
 
+  # Add bounding box information to the search URL
   url <- glue::glue("{url}&bounding_box={bounding_box$w_lon},{bounding_box$s_lat},{bounding_box$e_lon},{bounding_box$n_lat}")
 
+  # Add temporal range to the search URL, if specified
   if(!is.null(temporal)){
     url <- glue::glue("{url}&temporal={temporal[1]},{temporal[2]}")
   }
 
-
-
-
-
-
-
-
-  if(!is.null(time_resolution) && time_resolution %in% c("DAY","MO","YR","8D")){
-
-
+  # Add time resolution to the search URL, if specified and valid
+  if(!is.null(time_resolution) && time_resolution %in% c("DAY", "MO", "YR", "8D")){
     url <- glue::glue("{url}&granule_ur[]=*{short_name}*.{time_resolution}.*&options[granule_ur][pattern]=true")
-
-
-
   }
+
+  # Determine the number of results to retrieve based on max_results
   results_to_retrieve <- max_results
-
   if(is.null(results_to_retrieve)) {
-
+    # If max_results is NULL, determine the total available results by querying with page_size=1
     url_temp <- glue::glue("{url}&page_size=1")
-
     con <- curl::curl(url_temp)
-
     results_to_retrieve <- suppressWarnings(readLines(con)) %>% jsonlite::fromJSON() %>% purrr::pluck("hits")
-
     page_size <- 2000
-  }else{
-
-
-    page_size <- min(2000,max_results)
+  } else {
+    page_size <- min(2000, max_results)
   }
 
+  # Calculate the number of pages to retrieve based on page_size and total results
+  pages_to_retrieve <- seq(1, ceiling(results_to_retrieve / page_size))
 
-
-
-  pages_to_retrieve <- seq(1,ceiling(results_to_retrieve / 2000))
-
-
-
+  # Retrieve search results page by page
   out <- pages_to_retrieve %>% purrr::map(\(page_num){
-
-
-    url <- glue::glue("{url}&page_size={page_size}&page_num={page_num}")
-
-    con <- curl::curl(url)
-
+    url_with_page <- glue::glue("{url}&page_size={page_size}&page_num={page_num}")
+    con <- curl::curl(url_with_page)
     result <- suppressWarnings(readLines(con)) %>% jsonlite::fromJSON()
-
     return(result$items)
-
   }) %>% purrr::list_rbind()
 
-
-
-
+  # Flatten the results and unnest necessary columns
   out %<>% tidyr::unnest(c(meta, umm))
-
 
   return(out)
 }

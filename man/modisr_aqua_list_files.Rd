@@ -2,7 +2,7 @@
 % Please edit documentation in R/MODISR_AQUA.R
 \name{modisr_aqua_list_files}
 \alias{modisr_aqua_list_files}
-\title{https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html}
+\title{List MODIS AQUA Data Files from Earthdata Search}
 \usage{
 modisr_aqua_list_files(
   product = "MODIS AQUA L2 SST",
@@ -13,6 +13,41 @@ modisr_aqua_list_files(
   time_resolution = NULL
 )
 }
+\arguments{
+\item{product}{A character string specifying the product name, with a default value
+of "MODIS AQUA L2 SST". See \code{modisr_aqua_product_short_name} for supported products.}
+
+\item{max_results}{An integer specifying the maximum number of results to retrieve,
+with a default value of 20. Use \code{NULL} to attempt to retrieve all available results.}
+
+\item{temporal}{A character vector of length 2 specifying the start and end dates
+for the temporal range of interest in the format "YYYY-MM-DD". Default is \code{NULL},
+which means no temporal filter is applied.}
+
+\item{bounding_box}{A list specifying the north latitude, south latitude, west longitude,
+and east longitude of the bounding box for the area of interest. Default covers the whole globe.}
+
+\item{polygon}{Currently not implemented. Reserved for future use to specify polygon
+coordinates for complex area shapes.}
+
+\item{time_resolution}{A character string specifying the temporal resolution of the
+data files. Supported values include "DAY", "MO", "YR", and "8D".}
+}
+\value{
+A data frame containing the search results, including file URLs and metadata.
+}
 \description{
-https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html
+Retrieves a list of MODIS AQUA data files available for download
+from the Earthdata Search service (#' https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html). Users can specify the product type, temporal
+range, bounding box for the area of interest, polygon coordinates for more complex
+area shapes, and the temporal resolution of the data files.
+}
+\examples{
+\dontrun{
+  # List the first 20 MODIS AQUA L2 SST data files
+  files <- modisr_aqua_list_files()
+  # List data files for MODIS AQUA L3 Binned CHL with daily resolution
+  daily_chl_files <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned CHL",
+                                            time_resolution = "DAY")
+}
 }
