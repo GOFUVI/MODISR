@@ -23,9 +23,9 @@ modisr_get_gshhg_shp_path <- function(){
 }
 
 #' @export
-modisr_install_gshhg <- function(gshhg_version = modisr_the$config$gshhg_ver, cache_dir = NULL){
+modisr_install_gshhg <- function(gshhg_version = modisr_the$config$gshhg_ver){
 
-  cache_dir <- cache_dir %||% tools::R_user_dir("MODISR","cache")
+  cache_dir <- tools::R_user_dir("MODISR","cache")
 
 
   gshhg_prefix_and_url <- modist_get_gshhg_prefix_and_url(gshhg_version = gshhg_version)
