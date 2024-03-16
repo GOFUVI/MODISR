@@ -24,6 +24,7 @@ modisr_get_shoreline_path <- function(){
 
 }
 
+#' @export
 modisr_set_shoreline_path <- function(path){
 
   modisr_the$config$shoreline_path <- path
