@@ -56,6 +56,10 @@ modisr_aqua_product_short_name <- function(product){
 #' @export
 modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results = 20, temporal = NULL, bounding_box = list(n_lat = 90, s_lat = -90, w_lon = -180, e_lon = 180), polygon = NULL, time_resolution = NULL){
 
+  if(!is.null(temporal) && !rlang::is_list(temporal)){
+    temporal <- list(temporal)
+  }
+
 
   # Retrieve the short name for the specified product
   short_name <- modisr_aqua_product_short_name(product)
@@ -66,15 +70,25 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
   # Add bounding box information to the search URL
   url <- glue::glue("{url}&bounding_box={bounding_box$w_lon},{bounding_box$s_lat},{bounding_box$e_lon},{bounding_box$n_lat}")
 
-  # Add temporal range to the search URL, if specified
-  if(!is.null(temporal)){
-    url <- glue::glue("{url}&temporal={temporal[1]},{temporal[2]}")
-  }
 
   # Add time resolution to the search URL, if specified and valid
   if(!is.null(time_resolution) && time_resolution %in% c("DAY", "MO", "YR", "8D")){
     url <- glue::glue("{url}&granule_ur[]=*{short_name}*.{time_resolution}.*&options[granule_ur][pattern]=true")
   }
+
+
+  # Add temporal range to the search URL, if specified
+  if(!is.null(temporal)){
+    urls <- temporal %>% purrr::map_chr(\(temp){
+      url <- glue::glue("{url}&temporal={temp[1]},{temp[2]}")
+
+      return(url)
+    })
+
+  }else{
+    urls <- url
+  }
+results <- urls %>% purrr::map(\(url){
 
   # Determine the number of results to retrieve based on max_results
   results_to_retrieve <- max_results
@@ -103,6 +117,12 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
   out %<>% tidyr::unnest(c(meta, umm))
 
   return(out)
+})
+
+results %<>% dplyr::bind_rows()
+
+return(results)
+
 }
 
 modis_compute_bins_for_bounding_box <- function(bounding_box, buffer, numrows, landmask = NULL){
