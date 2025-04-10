@@ -63,6 +63,8 @@ modisr_install_gshhg <- function(gshhg_version = modisr_the$config$gshhg_ver){
 
   save(shoreline,file = shoreline_path)
 
+  file.mode(shoreline_path,mode = "444")
+
   invisible(NULL)
 
 }

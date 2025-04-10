@@ -106,7 +106,7 @@ describe("modisr_aqua_list_files",{
 
   describe("time_resolution option",{
 
-    it("should return the results for the given time resolution",{
+    it("should return the results for the given time period(s)",{
 
       skip_if_offline()
       skip_on_cran()
@@ -114,6 +114,30 @@ describe("modisr_aqua_list_files",{
       test <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned CHL",time_resolution = "DAY")
 
       test$took <- NULL
+
+      expect_snapshot_value(test, style = "serialize")
+
+
+    })
+
+    describe("temporal option",{
+      skip_if_offline()
+      skip_on_cran()
+      n_lat  <- 44
+      s_lat <- 42
+      w_lon <- -10
+      e_lon <- -8
+
+
+      bounding_box <- list(n_lat = n_lat, s_lat = s_lat, w_lon = w_lon, e_lon = e_lon)
+
+
+      test <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned CHL",time_resolution = "DAY", bounding_box=bounding_box, temporal = c("2023-07-01","2023-08-31"))
+
+      expect_snapshot_value(test, style = "serialize")
+
+
+      test <- modisr_aqua_list_files(product = "MODIS AQUA L3 Binned CHL",time_resolution = "DAY", bounding_box=bounding_box, temporal = list(c("2022-07-01","2022-08-31"), c("2023-07-01","2023-08-31")), max_results = NULL)
 
       expect_snapshot_value(test, style = "serialize")
 
