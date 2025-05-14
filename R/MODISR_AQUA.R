@@ -88,40 +88,40 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
   }else{
     urls <- url
   }
-results <- urls %>% purrr::map(\(url){
+  results <- urls %>% purrr::map(\(url){
 
-  # Determine the number of results to retrieve based on max_results
-  results_to_retrieve <- max_results
-  if(is.null(results_to_retrieve)) {
-    # If max_results is NULL, determine the total available results by querying with page_size=1
-    url_temp <- glue::glue("{url}&page_size=1")
-    con <- curl::curl(url_temp)
-    results_to_retrieve <- suppressWarnings(readLines(con)) %>% jsonlite::fromJSON() %>% purrr::pluck("hits")
-    page_size <- 2000
-  } else {
-    page_size <- min(2000, max_results)
-  }
+    # Determine the number of results to retrieve based on max_results
+    results_to_retrieve <- max_results
+    if(is.null(results_to_retrieve)) {
+      # If max_results is NULL, determine the total available results by querying with page_size=1
+      url_temp <- glue::glue("{url}&page_size=1")
+      con <- curl::curl(url_temp)
+      results_to_retrieve <- suppressWarnings(readLines(con)) %>% jsonlite::fromJSON() %>% purrr::pluck("hits")
+      page_size <- 2000
+    } else {
+      page_size <- min(2000, max_results)
+    }
 
-  # Calculate the number of pages to retrieve based on page_size and total results
-  pages_to_retrieve <- seq(1, ceiling(results_to_retrieve / page_size))
+    # Calculate the number of pages to retrieve based on page_size and total results
+    pages_to_retrieve <- seq(1, ceiling(results_to_retrieve / page_size))
 
-  # Retrieve search results page by page
-  out <- pages_to_retrieve %>% purrr::map(\(page_num){
-    url_with_page <- glue::glue("{url}&page_size={page_size}&page_num={page_num}")
-    con <- curl::curl(url_with_page)
-    result <- suppressWarnings(readLines(con)) %>% jsonlite::fromJSON()
-    return(result$items)
-  }) %>% purrr::list_rbind()
+    # Retrieve search results page by page
+    out <- pages_to_retrieve %>% purrr::map(\(page_num){
+      url_with_page <- glue::glue("{url}&page_size={page_size}&page_num={page_num}")
+      con <- curl::curl(url_with_page)
+      result <- suppressWarnings(readLines(con)) %>% jsonlite::fromJSON()
+      return(result$items)
+    }) %>% purrr::list_rbind()
 
-  # Flatten the results and unnest necessary columns
-  out %<>% tidyr::unnest(c(meta, umm))
+    # Flatten the results and unnest necessary columns
+    out %<>% tidyr::unnest(c(meta, umm))
 
-  return(out)
-})
+    return(out)
+  })
 
-results %<>% dplyr::bind_rows()
+  results %<>% dplyr::bind_rows()
 
-return(results)
+  return(results)
 
 }
 
@@ -570,7 +570,7 @@ modisr_filter_binned_data <- function(data, filter_fun ){
 
   out %<>% purrr::map(\(df) df %>% dplyr::slice(bins_to_keep)) %>% magrittr::set_attributes(attributes(out))
 
-return(out)
+  return(out)
 
 
 }
@@ -603,11 +603,11 @@ modisr_compute_total_data_area_binned <-  function(data){
 modisr_get_binned_summary_fun <-function(step_fun){
 
   out <- switch (step_fun,
-    total_data_area = modisr_compute_total_data_area_binned,
-    stop("Unknown step function")
+                 total_data_area = modisr_compute_total_data_area_binned,
+                 stop("Unknown step function")
   )
 
-return(out)
+  return(out)
 
 }
 
@@ -663,7 +663,7 @@ modisr_process_ts_binned_plot_step <- function(x, step){
 
   plot.path <- file.path(step$folder,paste0(tools::file_path_sans_ext(basename(x$ts_row$filepath )),".png"))
 
-ggplot2::ggsave(plot = step_fun(x$row_data),device = "png",filename = plot.path)
+  ggplot2::ggsave(plot = step_fun(x$row_data),device = "png",filename = plot.path)
 
   invisible(NULL)
 }
@@ -674,34 +674,40 @@ modisr_process_ts_binned <- function(ts, steps = list(), workers = 1){
   future::plan("multisession", workers = workers)
 
   out <- 1:nrow(ts) %>% furrr::future_map(\(i){
+
+    result <- NULL
+
     ts_row <- ts %>% dplyr::slice(i)
     vars <- load(ts_row$filepath[1])
 
     row_data <- get(vars[1])
 
-    processed_row <- steps %>% purrr::reduce(\(result_so_far, step){
+    processed_row <- try({
+      steps %>% purrr::reduce(\(result_so_far, step){
 
-      type <- step$type
+        type <- step$type
 
-      if(type == "transform"){
-        result_so_far %<>% modisr_process_ts_binned_transform_step( step)
+        if(type == "transform"){
+          result_so_far %<>% modisr_process_ts_binned_transform_step( step)
 
-      }else if(type == "summary"){
-        result_so_far %<>% modisr_process_ts_binned_summary_step( step)
+        }else if(type == "summary"){
+          result_so_far %<>% modisr_process_ts_binned_summary_step( step)
 
-      }else if(type == "plot"){
-        result_so_far %>% modisr_process_ts_binned_plot_step( step)
+        }else if(type == "plot"){
+          result_so_far %>% modisr_process_ts_binned_plot_step( step)
+        }
+
+        return(result_so_far)
+
       }
-
-      return(result_so_far)
-
-    },.init = list(ts_row = ts_row, row_data= row_data))
-
-    result <- processed_row$ts_row
-
+      ,.init = list(ts_row = ts_row, row_data= row_data))
+    })
+    if(!inherits(processed_row, "try-error")){
+      result <- processed_row$ts_row
+    }
     return(result)
 
-  },.options = furrr::furrr_options(seed = TRUE)) %>% dplyr::bind_rows()
+  },.options = furrr::furrr_options(seed = TRUE)) %>% purrr::compact() %>% dplyr::bind_rows()
 
   return(out)
 
@@ -888,6 +894,6 @@ modisr_plot_binned_data <- function(data, var, shoreline = NULL){
     out <- out + ggplot2::geom_sf(data=shoreline)
   }
 
-return(out)
+  return(out)
 
 }
