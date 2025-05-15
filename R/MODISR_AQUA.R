@@ -96,6 +96,7 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
       # If max_results is NULL, determine the total available results by querying with page_size=1
       url_temp <- glue::glue("{url}&page_size=1")
       cat(glue::glue("\n\n{Sys.time()} [MODISR]: Conecting to {url_temp} to get number of results\n"))
+      Sys.sleep(3)
       con <- curl::curl(url_temp)
 
       con_out <-  tryCatch(readLines(con, warn = FALSE),
@@ -115,7 +116,7 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
 
     # Retrieve search results page by page
     out <- pages_to_retrieve %>% purrr::map(\(page_num){
-      Sys.sleep(2)
+      Sys.sleep(3)
       res <-NULL
       url_with_page <- glue::glue("{url}&page_size={page_size}&page_num={page_num}")
       cat(glue::glue("\n\n{Sys.time()} [MODISR]: Retrieving results for page {page_num} using url:\n{url_with_page}\n"))
