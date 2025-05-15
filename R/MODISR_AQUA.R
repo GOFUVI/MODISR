@@ -95,19 +95,22 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
     if(is.null(results_to_retrieve)) {
       # If max_results is NULL, determine the total available results by querying with page_size=1
       url_temp <- glue::glue("{url}&page_size=1")
+      cat(glue::glue("\n{Sys.time()} [MODISR]: Conecting to {url_temp} to get number of results\n"))
       con <- curl::curl(url_temp)
-      results_to_retrieve <- suppressWarnings(readLines(con)) %>% jsonlite::fromJSON() %>% purrr::pluck("hits")
+
+      results_to_retrieve <- readLines(con) %>% jsonlite::fromJSON() %>% purrr::pluck("hits")
       page_size <- 2000
     } else {
       page_size <- min(2000, max_results)
     }
-
+    cat(glue::glue("\n{Sys.time()} [MODISR]: Retrieving {results_to_retrieve} results\n"))
     # Calculate the number of pages to retrieve based on page_size and total results
     pages_to_retrieve <- seq(1, ceiling(results_to_retrieve / page_size))
 
     # Retrieve search results page by page
     out <- pages_to_retrieve %>% purrr::map(\(page_num){
       url_with_page <- glue::glue("{url}&page_size={page_size}&page_num={page_num}")
+      cat(glue::glue("\n{Sys.time()} [MODISR]: Retrieving results for page {page_num} using url:\n{url_with_page}\n"))
       con <- curl::curl(url_with_page)
       result <- suppressWarnings(readLines(con)) %>% jsonlite::fromJSON()
       return(result$items)
