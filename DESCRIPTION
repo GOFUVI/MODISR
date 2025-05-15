@@ -17,7 +17,7 @@ Imports:
     curl,
     furrr,
     future,
-    ggplot2,
+    ggplot2 (>= 3.4.4),
     glue,
     jsonlite,
     magrittr,
