@@ -95,29 +95,59 @@ modisr_aqua_list_files <- function(product = "MODIS AQUA L2 SST",  max_results =
     if(is.null(results_to_retrieve)) {
       # If max_results is NULL, determine the total available results by querying with page_size=1
       url_temp <- glue::glue("{url}&page_size=1")
-      cat(glue::glue("\n{Sys.time()} [MODISR]: Conecting to {url_temp} to get number of results\n"))
+      cat(glue::glue("\n\n{Sys.time()} [MODISR]: Conecting to {url_temp} to get number of results\n"))
       con <- curl::curl(url_temp)
 
-      results_to_retrieve <- readLines(con) %>% jsonlite::fromJSON() %>% purrr::pluck("hits")
+      con_out <-  tryCatch(readLines(con, warn = FALSE),
+                           error = function(e) {
+                             cat(glue::glue("\n\n{Sys.time()} [MODISR]: An error happened '{as.character(e)}'"))
+                             stop(e)
+                           }
+      )
+      results_to_retrieve <- con_out %>% jsonlite::fromJSON() %>% purrr::pluck("hits")
       page_size <- 2000
     } else {
       page_size <- min(2000, max_results)
     }
-    cat(glue::glue("\n{Sys.time()} [MODISR]: Retrieving {results_to_retrieve} results\n"))
+    cat(glue::glue("\n\n{Sys.time()} [MODISR]: Retrieving {results_to_retrieve} results\n"))
     # Calculate the number of pages to retrieve based on page_size and total results
     pages_to_retrieve <- seq(1, ceiling(results_to_retrieve / page_size))
 
     # Retrieve search results page by page
     out <- pages_to_retrieve %>% purrr::map(\(page_num){
+      Sys.sleep(2)
+      res <-NULL
       url_with_page <- glue::glue("{url}&page_size={page_size}&page_num={page_num}")
-      cat(glue::glue("\n{Sys.time()} [MODISR]: Retrieving results for page {page_num} using url:\n{url_with_page}\n"))
+      cat(glue::glue("\n\n{Sys.time()} [MODISR]: Retrieving results for page {page_num} using url:\n{url_with_page}\n"))
       con <- curl::curl(url_with_page)
-      result <- suppressWarnings(readLines(con)) %>% jsonlite::fromJSON()
-      return(result$items)
-    }) %>% purrr::list_rbind()
 
-    # Flatten the results and unnest necessary columns
-    out %<>% tidyr::unnest(c(meta, umm))
+      con_out <-  tryCatch(readLines(con, warn = FALSE),
+                           error = function(e) {
+                             cat(glue::glue("\n\n{Sys.time()} [MODISR]: An error happened '{as.character(e)}'"))
+                             return(NULL)
+                           }
+      )
+      if(is.null(con_out)){
+        return(res)
+      }
+      result <- con_out %>% jsonlite::fromJSON()
+
+      if(!is.null(result$hits) && result$hits >0){
+        res <- result$items
+      }else{
+        cat(glue::glue("\n\n{Sys.time()} [MODISR]: No items found on page {page_num}."))
+      }
+      return(res)
+    }) %>% purrr::compact()
+
+    if(length(out) > 0){
+      out %<>% purrr::list_rbind()
+      # Flatten the results and unnest necessary columns
+      out %<>% tidyr::unnest(c(meta, umm))
+    }else{
+      cat(glue::glue("\n\n{Sys.time()} [MODISR]: No items found."))
+    }
+
 
     return(out)
   })
