@@ -246,13 +246,18 @@ modisr_aqua_download_and_read_data <- function(files, dest, key, workers = 1,var
 
       temp_dest_path <- file.path(temp_process_folder,file)
 
-      download.file(url, temp_dest_path,mode = "wb")
-
+      download_result <- try({
+        download.file(url, temp_dest_path,mode = "wb")
+      })
+      if(inherits(download_result,"try-error")){
+        return(character())
+      }
       data <- modisr_aqua_read_file_vars(temp_dest_path,vars = vars, is_binned = is_binned,bounding_box = bounding_box, bins = bins, landmask = landmask)
 
       save(data, file = rdata_dest_path)
 
       file.remove(temp_dest_path)
+
 
     }else{
       message(glue::glue("{rdata_dest_path} already exists, skipping"))
