@@ -266,8 +266,9 @@ modisr_aqua_download_and_read_data <- function(files, dest, key, workers = 1,var
 
   }
 
-  file_paths <- files$to_download %>% furrr::future_map_chr(download_and_read_oceandata_file,.progress = TRUE)
+  file_paths <- files$to_download %>% furrr::future_map(download_and_read_oceandata_file,.progress = TRUE)
 
+  file_paths <- file_paths %>% purrr::compact() %>% purrr::list_c()
 
 
   files$downloaded_file_path <- file_paths
