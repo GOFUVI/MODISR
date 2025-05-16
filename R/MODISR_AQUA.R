@@ -294,7 +294,8 @@ modisr_aqua_download_files <- function(files, dest, key, workers = 1) {
 
     dest_path <- file.path(dest,file)
     if(!file.exists(dest_path)){
-      download.file(url, dest_path,mode = "wb")
+
+      try(download.file(url, dest_path,mode = "wb"))
     }else{
       message(glue::glue("{dest_path} already exists, skipping"))
     }
