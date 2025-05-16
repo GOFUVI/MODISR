@@ -661,17 +661,25 @@ modisr_process_ts_binned_transform_step <- function(x, step){
     step_fun <- purrr::partial(step_fun,!!!fun_parameters)
   }
 
-  x$row_data %<>% step_fun()
+
 
   if(!is.null(step$save_folder)){
     save.path <- file.path(step$save_folder,basename(x$ts_row$filepath ))
 
     if(step$overwrite_files || !file.exists(save.path)){
+
+      x$row_data %<>% step_fun()
+
       data <- x$row_data
 
       save(data,file = save.path)
+    }else{
+      load(save.path)
+      x$row_data <- data
     }
 
+  }else{
+    x$row_data %<>% step_fun()
   }
 
   return(x)
@@ -693,18 +701,22 @@ modisr_process_ts_binned_summary_step <- function(x, step){
 
 
 modisr_process_ts_binned_plot_step <- function(x, step){
-  step_fun <- step$fun
-
-  if(is.character(step_fun)){
-    fun_parameters <- step$fun_parameters
-    step_fun <- modisr_get_binned_plot_fun(step_fun)
-    step_fun <- purrr::partial(step_fun,!!!fun_parameters)
-  }
 
   plot.path <- file.path(step$folder,paste0(tools::file_path_sans_ext(basename(x$ts_row$filepath )),".png"))
 
-  ggplot2::ggsave(plot = step_fun(x$row_data),device = "png",filename = plot.path)
+  if(!file.exists(plot.path) || (file.exists(plot.path) && (is.null(step$overwrite) || !is.null(step$overwrite) && step$overwrite == TRUE)) ){
 
+    step_fun <- step$fun
+
+    if(is.character(step_fun)){
+      fun_parameters <- step$fun_parameters
+      step_fun <- modisr_get_binned_plot_fun(step_fun)
+      step_fun <- purrr::partial(step_fun,!!!fun_parameters)
+    }
+
+
+    suppressMessages(ggplot2::ggsave(plot = step_fun(x$row_data),device = "png",filename = plot.path,width = 7,height = 7))
+  }
   invisible(NULL)
 }
 
