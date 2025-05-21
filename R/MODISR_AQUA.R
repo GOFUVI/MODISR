@@ -753,7 +753,7 @@ modisr_process_ts_binned <- function(ts, steps = list(), workers = 1){
 
       }
       ,.init = list(ts_row = ts_row, row_data= row_data))
-    } silent = T)
+    }, silent = TRUE)
     if(!inherits(processed_row, "try-error")){
       result <- processed_row$ts_row
     }else{
