@@ -753,11 +753,11 @@ modisr_process_ts_binned <- function(ts, steps = list(), workers = 1){
 
       }
       ,.init = list(ts_row = ts_row, row_data= row_data))
-    })
+    } silent = T)
     if(!inherits(processed_row, "try-error")){
       result <- processed_row$ts_row
     }else{
-      cat(paste0(ts_row$filepath[1], paste0(as.character(processed_row), collapse = "\n")))
+      rlang::warn(paste0(ts_row$filepath[1], paste0(as.character(processed_row), collapse = "\n")))
     }
     return(result)
 
