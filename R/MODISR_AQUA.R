@@ -755,8 +755,9 @@ modisr_process_ts_binned <- function(ts, steps = list(), workers = 1){
       ,.init = list(ts_row = ts_row, row_data= row_data))
     })
     if(!inherits(processed_row, "try-error")){
-      cat(paste0(ts_row$filepath[1], paste0(as.character(processed_row), collapse = "\n")))
       result <- processed_row$ts_row
+    }else{
+      cat(paste0(ts_row$filepath[1], paste0(as.character(processed_row), collapse = "\n")))
     }
     return(result)
 
